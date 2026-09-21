@@ -32,7 +32,5 @@ func getPrice(ticker, apiKey string) (Price, error) {
 		return Price{}, err
 	}
 
-	fmt.Printf("%v", result)
-
 	return result[0], nil
 }

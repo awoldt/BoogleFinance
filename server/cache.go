@@ -5,13 +5,14 @@ package main
 
 import (
 	"sync"
+	"time"
 )
 
 type PriceValue struct {
 	Name  string
 	Price float32
 	// epoch time that prices expires, should refresh price when expired
-	Expires int
+	Expires int64
 }
 
 type Cache struct {
@@ -19,20 +20,34 @@ type Cache struct {
 	Data map[string]PriceValue // a map of all the tickers and their price data
 }
 
-func (p *Cache) savePrice(ticker string, price float32) {
+func (p *Cache) saveCachedPrice(ticker string, price float32) {
 	// lock before writing
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
 
-	x := p.Data[ticker]
-	x.Price = price
-	p.Data[ticker] = x
+	// set the price
+	value := p.Data[ticker]
+	value.Price = price
+
+	// set the expiration (1 min from now)
+	oneMinFromNow := time.Now()
+	oneMinFromNow.Add(time.Minute * 1)
+	value.Expires = oneMinFromNow.Unix()
+
+	// set the value of the map
+	p.Data[ticker] = value
 }
 
-func (p *Cache) getPrice(ticker string) float32 {
+func (p *Cache) getCachedPrice(ticker string) float32 {
 	// lock before reading
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
 
-	return p.Data[ticker].Price
+	t, ok := p.Data[ticker]
+	if !ok {
+		// ticker doesnt exist in cache
+		return 0.0
+	} else {
+		return t.Price
+	}
 }
