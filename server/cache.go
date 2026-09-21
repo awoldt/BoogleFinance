@@ -3,23 +3,30 @@
 
 package main
 
-import "sync"
+import (
+	"sync"
+)
 
-type PriceCache map[string]float32
+type PriceValue struct {
+	Name  string
+	Price float32
+	// epoch time that prices expires, should refresh price when expired
+	Expires int
+}
 
 type Cache struct {
 	Mu   sync.RWMutex
-	Data PriceCache
+	Data map[string]PriceValue // a map of all the tickers and their price data
 }
-
-var PRICE_CACHE = make(PriceCache)
 
 func (p *Cache) savePrice(ticker string, price float32) {
 	// lock before writing
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
 
-	p.Data[ticker] = price
+	x := p.Data[ticker]
+	x.Price = price
+	p.Data[ticker] = x
 }
 
 func (p *Cache) getPrice(ticker string) float32 {
@@ -27,5 +34,5 @@ func (p *Cache) getPrice(ticker string) float32 {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
 
-	return p.Data[ticker]
+	return p.Data[ticker].Price
 }
