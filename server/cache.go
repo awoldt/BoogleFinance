@@ -36,9 +36,9 @@ func (p *Cache) getTickerFromCache(symbol string) Ticker {
 	defer p.Mu.RUnlock()
 
 	t, ok := p.Data[symbol]
+
 	if !ok {
 		// ticker doesnt exist in cache
-		// price will be 0.0 which means not in cache
 		return Ticker{}
 	} else {
 		return t
