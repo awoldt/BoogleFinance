@@ -34,7 +34,7 @@ func main() {
 		// see if price is already cached
 		cachedPrice := PRICE_CACHE.getCachedPrice("AAPL")
 
-		var price Price
+		var ticker Ticker
 		if cachedPrice.Price == 0.0 {
 			// NOT IN CACHE
 
@@ -50,7 +50,7 @@ func main() {
 
 			// save price to cache
 			PRICE_CACHE.saveCachedPrice("AAPL", p.Price)
-			price = p
+			ticker = p
 		} else {
 			//  IN CACHE
 
@@ -69,12 +69,12 @@ func main() {
 
 				// save price to cache
 				PRICE_CACHE.saveCachedPrice("AAPL", p.Price)
-				price = p
+				ticker = p
 			}
 		}
 
 		w.Header().Add("Content-Type", "application/json")
-		json.MarshalWrite(w, price)
+		json.MarshalWrite(w, ticker)
 	})
 
 	http.ListenAndServe(":8080", r)
