@@ -9,10 +9,9 @@ import (
 )
 
 type PriceValue struct {
-	Name  string
-	Price float32
-	// epoch time that prices expires, should refresh price when expired
-	Expires int64
+	Name    string
+	Price   float32
+	Expires int64 // epoch time in seconds when thsi price will expire and need to be refreshed
 }
 
 type Cache struct {
@@ -30,15 +29,14 @@ func (p *Cache) saveCachedPrice(ticker string, price float32) {
 	value.Price = price
 
 	// set the expiration (1 min from now)
-	oneMinFromNow := time.Now()
-	oneMinFromNow.Add(time.Minute * 1)
-	value.Expires = oneMinFromNow.Unix()
+	oneMinFromNow := time.Now().Add(time.Minute * 1).Unix()
+	value.Expires = oneMinFromNow
 
 	// set the value of the map
 	p.Data[ticker] = value
 }
 
-func (p *Cache) getCachedPrice(ticker string) float32 {
+func (p *Cache) getCachedPrice(ticker string) PriceValue {
 	// lock before reading
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
@@ -46,8 +44,9 @@ func (p *Cache) getCachedPrice(ticker string) float32 {
 	t, ok := p.Data[ticker]
 	if !ok {
 		// ticker doesnt exist in cache
-		return 0.0
+		// price will be 0.0 which means not in cache
+		return PriceValue{}
 	} else {
-		return t.Price
+		return t
 	}
 }

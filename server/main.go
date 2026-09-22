@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -34,7 +35,9 @@ func main() {
 		cachedPrice := PRICE_CACHE.getCachedPrice("AAPL")
 
 		var price Price
-		if cachedPrice == 0.0 {
+		if cachedPrice.Price == 0.0 {
+			// NOT IN CACHE
+
 			println("not in cache")
 			// ticker requested was not in cache (price of 0.0)
 			//  see if fmp returns result on it
@@ -49,7 +52,25 @@ func main() {
 			PRICE_CACHE.saveCachedPrice("AAPL", p.Price)
 			price = p
 		} else {
+			//  IN CACHE
+
 			println("in cache!")
+			now := time.Now()
+			if now.Unix() >= cachedPrice.Expires {
+				println("EXPIRED!")
+				// price has expired
+				// fetch new price
+				p, err := getPrice("AAPL", FMP_API_KEY)
+				if err != nil {
+					w.WriteHeader(500)
+					w.Write([]byte("error while loading page :("))
+					return
+				}
+
+				// save price to cache
+				PRICE_CACHE.saveCachedPrice("AAPL", p.Price)
+				price = p
+			}
 		}
 
 		w.Header().Add("Content-Type", "application/json")
