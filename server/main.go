@@ -25,14 +25,14 @@ func main() {
 	}
 
 	var PRICE_CACHE Cache = Cache{
-		Data: make(map[string]PriceValue),
+		Data: make(map[string]Ticker),
 	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		// see if price is already cached
-		cachedPrice := PRICE_CACHE.getCachedPrice("AAPL")
+		cachedPrice := PRICE_CACHE.getTickerFromCache("AAPL")
 
 		var ticker Ticker
 		if cachedPrice.Price == 0.0 {
@@ -48,18 +48,17 @@ func main() {
 				return
 			}
 
-			// save price to cache
-			PRICE_CACHE.saveCachedPrice("AAPL", p.Price)
+			// save to cache
+			PRICE_CACHE.saveTickerToCache(p)
 			ticker = p
 		} else {
 			//  IN CACHE
-
 			println("in cache!")
 			now := time.Now()
+
+			// see if cache needs to be refreshd for this ticker
 			if now.Unix() >= cachedPrice.Expires {
 				println("EXPIRED!")
-				// price has expired
-				// fetch new price
 				p, err := getPrice("AAPL", FMP_API_KEY)
 				if err != nil {
 					w.WriteHeader(500)
@@ -68,9 +67,11 @@ func main() {
 				}
 
 				// save price to cache
-				PRICE_CACHE.saveCachedPrice("AAPL", p.Price)
+				PRICE_CACHE.saveTickerToCache(p)
 				ticker = p
 			}
+
+			ticker = cachedPrice
 		}
 
 		w.Header().Add("Content-Type", "application/json")

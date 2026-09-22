@@ -16,6 +16,7 @@ type Ticker struct {
 	Change           float32 `json:"change"`
 	ChangePercentage float32 `json:"changePercentage"`
 	LastUpdated      int     `json:"timestamp"` // epoch time in seconds when this tickers price was last updated by FMP
+	Expires          int64   `json:"expires"`   // when to ping FMP to refresh this ticker stored in server cache
 }
 
 func getPrice(ticker, apiKey string) (Ticker, error) {
