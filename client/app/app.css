@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --canvas: #ffffff;
+  --ink: #202124;
+  --muted: #5f6368;
+  --faint: #80868b;
+  --line: #e8eaed;
+  --line-strong: #dadce0;
+  --card: #ffffff;
+  --hover: #f8f9fa;
+  --up: #137333;
+  --up-bg: #e6f4ea;
+  --down: #c5221f;
+  --down-bg: #fce8e6;
+  --link: #1a73e8;
+  --link-bg: #e8f0fe;
+  --search: #ffffff;
+  --wave: #c5d0e0;
+  --hero: #f7f9fc;
+  --chip: #ffffff;
+  --shadow: 0 1px 6px rgb(32 33 36 / 16%);
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: #202124;
+  --ink: #e8eaed;
+  --muted: #9aa0a6;
+  --faint: #9aa0a6;
+  --line: #3c4043;
+  --line-strong: #5f6368;
+  --card: #292a2d;
+  --hover: #35363a;
+  --up: #81c995;
+  --up-bg: #1e3a2b;
+  --down: #f28b82;
+  --down-bg: #3c2020;
+  --link: #8ab4f8;
+  --link-bg: #394457;
+  --search: #303134;
+  --wave: #8ab4f8;
+  --hero: #292a2d;
+  --chip: #303134;
+  --shadow: 0 1px 8px rgb(0 0 0 / 45%);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --color-canvas: var(--canvas);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-card: var(--card);
+  --color-hover: var(--hover);
+  --color-up: var(--up);
+  --color-up-bg: var(--up-bg);
+  --color-down: var(--down);
+  --color-down-bg: var(--down-bg);
+  --color-link: var(--link);
+  --color-link-bg: var(--link-bg);
+  --color-search: var(--search);
+  --color-wave: var(--wave);
+  --color-hero: var(--hero);
+  --color-chip: var(--chip);
+}
+
+html,
+body {
+  @apply bg-canvas text-ink font-sans antialiased;
+}
