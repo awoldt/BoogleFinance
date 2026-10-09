@@ -117,7 +117,7 @@ export function FinanceHome() {
         </div>
       </section>
 
-      <main className="w-full px-[max(4rem,12vw)] py-8">
+      <main className="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-normal text-ink">You may be interested in</h1>
