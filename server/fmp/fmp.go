@@ -1,4 +1,4 @@
-package main
+package fmp
 
 import (
 	"encoding/json/v2"
@@ -19,7 +19,7 @@ type Ticker struct {
 	Expires          int64   `json:"expires"`   // when to ping FMP to refresh this ticker stored in server cache
 }
 
-func getPrice(ticker, apiKey string) (Ticker, error) {
+func GetTickerPrice(ticker, apiKey string) (Ticker, error) {
 	url := fmt.Sprintf("https://financialmodelingprep.com/stable/quote?symbol=%v&apikey=%v", ticker, apiKey)
 	res, err := HttpClient.Get(url)
 	if err != nil {

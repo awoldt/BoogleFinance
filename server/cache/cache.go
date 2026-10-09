@@ -1,23 +1,29 @@
 // THIS IS THE SINGLE MAP IN MEMORY THAT CACHES PRICE DATA
 // PROTECT IT WITH A LOCK!
 
-package main
+package cache
 
 import (
 	"sync"
+	"watchlist/fmp"
 )
+
+// THIS IS THE SINGLE CACHE STRUCT THE SERVER WILL READ/WRITE FROM
+var PRICE_CACHE Cache = Cache{
+	Data: make(map[string]fmp.Ticker),
+}
 
 type Cache struct {
 	Mu   sync.RWMutex
-	Data map[string]Ticker // a map of all the tickers and their price data
+	Data map[string]fmp.Ticker // a map of all the tickers and their price data
 }
 
-func (p *Cache) saveTickerToCache(ticker Ticker) {
+func (p *Cache) SaveTickerToCache(ticker fmp.Ticker) {
 	// lock before writing
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
 
-	var t Ticker = Ticker{
+	var t fmp.Ticker = fmp.Ticker{
 		Name:             ticker.Name,
 		Symbol:           ticker.Symbol,
 		Price:            ticker.Price,
@@ -30,7 +36,7 @@ func (p *Cache) saveTickerToCache(ticker Ticker) {
 	p.Data[t.Symbol] = t
 }
 
-func (p *Cache) getTickerFromCache(symbol string) Ticker {
+func (p *Cache) GetTickerFromCache(symbol string) fmp.Ticker {
 	// lock before reading
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
@@ -39,7 +45,7 @@ func (p *Cache) getTickerFromCache(symbol string) Ticker {
 
 	if !ok {
 		// ticker doesnt exist in cache
-		return Ticker{}
+		return fmp.Ticker{}
 	} else {
 		return t
 	}

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"watchlist/cache"
+	"watchlist/fmp"
+
 	"encoding/json/v2"
 	"log"
 	"net/http"
@@ -13,35 +16,33 @@ import (
 )
 
 func main() {
+	// load the env variables
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("error loading .env file")
 	}
 
+	// get the FMP api key
 	FMP_API_KEY := os.Getenv("FMP_API_KEY")
 	if FMP_API_KEY == "" {
 		log.Fatal("error fmp api key is blank")
 
 	}
 
-	var PRICE_CACHE Cache = Cache{
-		Data: make(map[string]Ticker),
-	}
-
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		// see if price is already cached
-		cachedPrice := PRICE_CACHE.getTickerFromCache("AAPL")
+		cachedPrice := cache.PRICE_CACHE.GetTickerFromCache("AAPL")
 
-		var ticker Ticker
+		var ticker fmp.Ticker
 		if cachedPrice.Price == 0.0 {
 			// NOT IN CACHE
 
 			println("not in cache")
 			// ticker requested was not in cache (price of 0.0)
 			//  see if fmp returns result on it
-			p, err := getPrice("AAPL", FMP_API_KEY)
+			p, err := fmp.GetTickerPrice("AAPL", FMP_API_KEY)
 			if err != nil {
 				w.WriteHeader(500)
 				w.Write([]byte("error while loading page :("))
@@ -49,7 +50,7 @@ func main() {
 			}
 
 			// save to cache
-			PRICE_CACHE.saveTickerToCache(p)
+			cache.PRICE_CACHE.SaveTickerToCache(p)
 			ticker = p
 		} else {
 			//  IN CACHE
@@ -59,7 +60,7 @@ func main() {
 			// see if cache needs to be refreshd for this ticker
 			if now.Unix() >= cachedPrice.Expires {
 				println("EXPIRED!")
-				p, err := getPrice("AAPL", FMP_API_KEY)
+				p, err := fmp.GetTickerPrice("AAPL", FMP_API_KEY)
 				if err != nil {
 					w.WriteHeader(500)
 					w.Write([]byte("error while loading page :("))
@@ -67,7 +68,7 @@ func main() {
 				}
 
 				// save price to cache
-				PRICE_CACHE.saveTickerToCache(p)
+				cache.PRICE_CACHE.SaveTickerToCache(p)
 				ticker = p
 			}
 
