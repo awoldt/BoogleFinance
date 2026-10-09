@@ -1,23 +1,18 @@
 import { useMemo, useState } from "react";
 import {
-  earnings,
   interested,
-  trends,
   type Direction,
   type StockQuote,
 } from "~/data/markets";
 import {
   ArrowIcon,
-  CalendarIcon,
   CheckIcon,
   InfoIcon,
   ListIcon,
   MoonIcon,
   PlusIcon,
-  PortfolioIcon,
   SearchIcon,
   SunIcon,
-  TrendGlyph,
 } from "~/components/icons";
 
 function directionClass(direction: Direction) {
@@ -71,7 +66,6 @@ function WaveBackdrop() {
 export function FinanceHome() {
   const [query, setQuery] = useState("");
   const [saved, setSaved] = useState<string[]>([]);
-  const [trend, setTrend] = useState<string | null>(null);
   const [lists, setLists] = useState<string[]>([]);
   const [namingList, setNamingList] = useState(false);
   const [listName, setListName] = useState("");
@@ -107,12 +101,6 @@ export function FinanceHome() {
 
   return (
     <div className="min-h-screen bg-canvas">
-      <header className="bg-canvas">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-end px-4 sm:px-6">
-          <ThemeToggle />
-        </div>
-      </header>
-
       <section className="relative overflow-hidden bg-hero">
         <WaveBackdrop />
         <div className="relative mx-auto max-w-2xl px-4 py-10 sm:py-14">
@@ -129,7 +117,7 @@ export function FinanceHome() {
         </div>
       </section>
 
-      <main className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-10">
+      <main className="w-full px-[max(4rem,12vw)] py-8">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-normal text-ink">You may be interested in</h1>
@@ -214,71 +202,9 @@ export function FinanceHome() {
           </div>
         </div>
 
-        <aside className="flex flex-col gap-4">
-          <section className="rounded-2xl border border-line bg-card px-5 py-6 text-center">
-            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-link-bg text-link">
-              <PortfolioIcon className="h-5 w-5" />
-            </div>
-            <p className="mx-auto mt-3 max-w-[240px] text-sm leading-5 text-muted">
-              Create a portfolio to view your investments in one place
-            </p>
-            <button
-              type="button"
-              className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1 rounded-full border border-line-strong text-sm font-medium text-link hover:bg-hover"
-            >
-              <PlusIcon className="h-4 w-4" />
-              New portfolio
-            </button>
-          </section>
-
-          <section className="rounded-2xl border border-line bg-card px-5 py-5">
-            <h2 className="text-lg font-normal text-ink">Market trends</h2>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {trends.map((item) => {
-                const selected = trend === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() =>
-                      setTrend((current) => (current === item.id ? null : item.id))
-                    }
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${
-                      selected
-                        ? "border-link bg-link-bg text-link"
-                        : "border-line-strong bg-chip text-ink hover:bg-hover"
-                    }`}
-                  >
-                    <TrendGlyph icon={item.icon} />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-line bg-card px-5 py-5">
-            <h2 className="text-lg font-normal text-ink">Earnings calendar</h2>
-            <p className="mt-1 text-sm text-muted">Based on popular stocks</p>
-            <ul className="mt-3 divide-y divide-line">
-              {earnings.map((earning) => (
-                <li
-                  key={`${earning.month}-${earning.company}`}
-                  className="flex items-center gap-3 py-3"
-                >
-                  <span className="w-9 shrink-0 text-[11px] font-medium tracking-wide text-muted">
-                    {earning.month}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[15px] text-ink">
-                    {earning.company}
-                  </span>
-                  <CalendarIcon className="h-5 w-5 shrink-0 text-faint" />
-                </li>
-              ))}
-            </ul>
-          </section>
-        </aside>
+        <div className="mt-6 flex justify-end">
+          <ThemeToggle />
+        </div>
       </main>
     </div>
   );
