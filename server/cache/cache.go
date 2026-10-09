@@ -36,7 +36,7 @@ func (p *Cache) SaveTickerToCache(ticker fmp.Ticker) {
 	p.Data[t.Symbol] = t
 }
 
-func (p *Cache) GetTickerFromCache(symbol string) fmp.Ticker {
+func (p *Cache) GetTickerFromCache(symbol string) (found bool, TickerData fmp.Ticker) {
 	// lock before reading
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
@@ -45,8 +45,8 @@ func (p *Cache) GetTickerFromCache(symbol string) fmp.Ticker {
 
 	if !ok {
 		// ticker doesnt exist in cache
-		return fmp.Ticker{}
+		return false, fmp.Ticker{}
 	} else {
-		return t
+		return true, t
 	}
 }

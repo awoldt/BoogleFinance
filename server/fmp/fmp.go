@@ -22,6 +22,13 @@ type Ticker struct {
 func GetTickerPrice(ticker, apiKey string) (Ticker, error) {
 	url := fmt.Sprintf("https://financialmodelingprep.com/stable/quote?symbol=%v&apikey=%v", ticker, apiKey)
 	res, err := HttpClient.Get(url)
+
+	// ticker doesnt exist
+	if res.StatusCode == 404 {
+		log.Printf("ERROR: %v is not a valid ticker on FMP", ticker)
+		return Ticker{}, err
+	}
+
 	if err != nil {
 		log.Printf("ERROR: failed while making request to FMP API: %v", err)
 		return Ticker{}, err

@@ -3,6 +3,7 @@ package main
 import (
 	"watchlist/cache"
 	"watchlist/fmp"
+	"watchlist/routes"
 
 	"encoding/json/v2"
 	"log"
@@ -26,17 +27,19 @@ func main() {
 	FMP_API_KEY := os.Getenv("FMP_API_KEY")
 	if FMP_API_KEY == "" {
 		log.Fatal("error fmp api key is blank")
-
 	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+
+	r.Get("/search", routes.SearchTicker(FMP_API_KEY))
+
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		// see if price is already cached
-		cachedPrice := cache.PRICE_CACHE.GetTickerFromCache("AAPL")
+		hit, cachedPrice := cache.PRICE_CACHE.GetTickerFromCache("AAPL")
 
 		var ticker fmp.Ticker
-		if cachedPrice.Price == 0.0 {
+		if !hit {
 			// NOT IN CACHE
 
 			println("not in cache")
