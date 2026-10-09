@@ -1,0 +1,10 @@
+# client
+client/.DS_Store
+client/.env
+client/node_modules/
+client/.react-router/
+client/build/
+
+# server
+server/tmp
+server/.env
