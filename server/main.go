@@ -12,11 +12,8 @@ import (
 )
 
 func main() {
-	// load the env variables
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("error loading .env file")
-	}
+	// load the env variables (ignore error, this reads from .env locally but should work on cloud deployments)
+	godotenv.Load()
 
 	port := os.Getenv("PORT")
 	if port == "" {
