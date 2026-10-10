@@ -16,10 +16,11 @@ type Ticker struct {
 	Change           float32 `json:"change"`
 	ChangePercentage float32 `json:"changePercentage"`
 	LastUpdated      int     `json:"timestamp"` // epoch time in seconds when this tickers price was last updated by FMP
-	Expires          int64   `json:"expires"`   // when to ping FMP to refresh this ticker stored in server cache
+	Expires          int64   `json:"expires"`   // when to ping FMP to refresh this ticker stored in server cache (epoch in seconds)
 }
 
 func GetTickerPrice(ticker, apiKey string) (Ticker, error) {
+	log.Printf("getting ticker data for %v", ticker)
 	url := fmt.Sprintf("https://financialmodelingprep.com/stable/quote?symbol=%v&apikey=%v", ticker, apiKey)
 	res, err := HttpClient.Get(url)
 

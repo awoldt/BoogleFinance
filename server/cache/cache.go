@@ -4,24 +4,26 @@
 package cache
 
 import (
+	"log"
 	"sync"
+	"time"
 	"watchlist/fmp"
 )
-
-// THIS IS THE SINGLE CACHE STRUCT THE SERVER WILL READ/WRITE FROM
-var PRICE_CACHE Cache = Cache{
-	Data: make(map[string]fmp.Ticker),
-}
 
 type Cache struct {
 	Mu   sync.RWMutex
 	Data map[string]fmp.Ticker // a map of all the tickers and their price data
 }
 
-func (p *Cache) SaveTickerToCache(ticker fmp.Ticker) {
+// THIS IS THE SINGLE CACHE STRUCT THE SERVER WILL READ/WRITE FROM
+var PRICE_CACHE Cache = Cache{
+	Data: make(map[string]fmp.Ticker),
+}
+
+func (cache *Cache) SaveTickerToCache(ticker fmp.Ticker) {
 	// lock before writing
-	p.Mu.Lock()
-	defer p.Mu.Unlock()
+	cache.Mu.Lock()
+	defer cache.Mu.Unlock()
 
 	var t fmp.Ticker = fmp.Ticker{
 		Name:             ticker.Name,
@@ -30,23 +32,51 @@ func (p *Cache) SaveTickerToCache(ticker fmp.Ticker) {
 		Change:           ticker.Change,
 		ChangePercentage: ticker.ChangePercentage,
 		LastUpdated:      ticker.LastUpdated,
-		Expires:          ticker.Expires,
+		Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
 	}
 
-	p.Data[t.Symbol] = t
+	cache.Data[t.Symbol] = t
+	log.Printf("saved %v to cache", ticker.Symbol)
 }
 
-func (p *Cache) GetTickerFromCache(symbol string) (found bool, TickerData fmp.Ticker) {
+func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, TickerData fmp.Ticker, err error) {
 	// lock before reading
-	p.Mu.RLock()
-	defer p.Mu.RUnlock()
+	// MAKE SURE TO UNLOCK!
+	cache.Mu.RLock()
 
-	t, ok := p.Data[symbol]
+	t, ok := cache.Data[ticker]
 
 	if !ok {
 		// ticker doesnt exist in cache
-		return false, fmp.Ticker{}
+		log.Printf("%v does not exist in cache", ticker)
+		cache.Mu.RUnlock()
+
+		return false, fmp.Ticker{}, nil
 	} else {
-		return true, t
+		// ticker does exist
+		// check if the cache is expired
+
+		log.Printf("%v found in cache!", ticker)
+
+		now := time.Now().Unix()
+		if now >= t.Expires {
+			// expired
+			// refetch data from fmp and save new cache
+			log.Printf("%v cached is expired...... saving new cache record", ticker)
+
+			refreshedData, err := fmp.GetTickerPrice(ticker, apiKey)
+			if err != nil {
+				log.Printf("ERROR: failed to update cache with new ticker price: %v", err)
+				cache.Mu.RUnlock()
+				return true, fmp.Ticker{}, err
+			}
+
+			cache.Mu.RUnlock() // unlock the cache read so a write can happen
+			cache.SaveTickerToCache(refreshedData)
+			return true, refreshedData, nil
+		}
+
+		cache.Mu.RUnlock()
+		return true, t, nil
 	}
 }
