@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"strings"
 )
 
 var HttpClient http.Client
@@ -49,6 +50,8 @@ func SearchTicker(ticker, apiKey string) ([]SearchTickerResult, error) {
 	}
 	defer symbolSearchReq.Body.Close()
 
+	var invalidSymbolCharacter = "." // we dont want any "AMZN.NE or AMZN.TO.. just basic AMZN"
+
 	var companySearchResults []SearchTickerResult
 	err = json.UnmarshalRead(companySearchReq.Body, &companySearchResults)
 	if err != nil {
@@ -66,6 +69,9 @@ func SearchTicker(ticker, apiKey string) ([]SearchTickerResult, error) {
 	// loop through and add each unique result
 	var finalResults []SearchTickerResult
 	for _, v := range companySearchResults {
+		if strings.Contains(v.Symbol, invalidSymbolCharacter) {
+			continue
+		}
 
 		exists := slices.ContainsFunc(finalResults, func(x SearchTickerResult) bool {
 			if x.Symbol == v.Symbol {
@@ -79,6 +85,10 @@ func SearchTicker(ticker, apiKey string) ([]SearchTickerResult, error) {
 		}
 	}
 	for _, v := range symbolSearchResults {
+		if strings.Contains(v.Symbol, invalidSymbolCharacter) {
+			continue
+		}
+
 		exists := slices.ContainsFunc(finalResults, func(x SearchTickerResult) bool {
 			if x.Symbol == v.Symbol {
 				return true
