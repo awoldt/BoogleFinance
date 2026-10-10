@@ -9,11 +9,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // /api/search?ticker=AAPL -> http://localhost:8080/search?ticker=AAPL
-      "/api": {
-        target: "http://localhost:8080",
-        rewrite: (path) => path.replace(/^\/api/, ""),
-      },
+      // /api/search?ticker=AAPL -> http://localhost:8080/api/search?ticker=AAPL
+      "/api": "http://localhost:8080",
     },
   },
 });

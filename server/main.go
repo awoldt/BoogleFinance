@@ -27,8 +27,8 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-	r.Get("/", routes.TickerRoute(FMP_API_KEY))
-	r.Get("/search", routes.SearchTickerRoute(FMP_API_KEY))
+	r.Get("/api/price", routes.TickerRoute(FMP_API_KEY))
+	r.Get("/api/search", routes.SearchTickerRoute(FMP_API_KEY))
 
 	http.ListenAndServe(":"+port, r)
 }
