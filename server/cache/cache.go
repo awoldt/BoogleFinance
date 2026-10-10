@@ -45,11 +45,11 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 	cache.Mu.RLock()
 
 	t, ok := cache.Data[ticker]
+	cache.Mu.RUnlock() // once we read from cache, no need for this read lock anymore
 
 	if !ok {
 		// ticker doesnt exist in cache
 		log.Printf("%v does not exist in cache", ticker)
-		cache.Mu.RUnlock()
 
 		return false, fmp.Ticker{}, nil
 	} else {
@@ -67,16 +67,14 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 			refreshedData, err := fmp.GetTickerPrice(ticker, apiKey)
 			if err != nil {
 				log.Printf("ERROR: failed to update cache with new ticker price: %v", err)
-				cache.Mu.RUnlock()
+
 				return true, fmp.Ticker{}, err
 			}
 
-			cache.Mu.RUnlock() // unlock the cache read so a write can happen
 			cache.SaveTickerToCache(refreshedData)
 			return true, refreshedData, nil
 		}
 
-		cache.Mu.RUnlock()
 		return true, t, nil
 	}
 }
