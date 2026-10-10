@@ -4,9 +4,10 @@ export type SearchResult = {
   exchange: string;
 };
 
-// Origin of the Go server, e.g. https://my-server.up.railway.app (no trailing
-// slash, no /api). Empty in dev so requests go through the vite proxy.
-const API_ORIGIN = import.meta.env.VITE_API_URL ?? "";
+// Origin of the Go server, e.g. https://my-server.up.railway.app (no /api).
+// Empty in dev so requests go through the vite proxy. Trailing slashes are
+// stripped so a copy/pasted "https://host/" doesn't produce "//api/...".
+const API_ORIGIN = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
 
 export async function searchTickers(
   query: string,
