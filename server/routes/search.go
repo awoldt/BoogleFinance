@@ -4,11 +4,10 @@ import (
 	"encoding/json/v2"
 	"net/http"
 	"strings"
-	"watchlist/cache"
 	"watchlist/fmp"
 )
 
-func SearchTicker(apiKey string) func(w http.ResponseWriter, r *http.Request) {
+func SearchTickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 
@@ -21,30 +20,13 @@ func SearchTicker(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 		}
 		ticker = strings.ToUpper(ticker)
 
-		// check if we have this ticker stored in the cache
-		hit, cachedTicker, err := cache.PRICE_CACHE.GetTickerFromCache(ticker, apiKey)
+		searchResults, err := fmp.SearchTicker(ticker, apiKey)
 		if err != nil {
 			w.WriteHeader(500)
-			w.Write([]byte("error while getting ticker details :("))
+			w.Write([]byte("errror while searching tickers :("))
 			return
 		}
 
-		if !hit {
-			// if not, search fmp for stock data
-			tData, err := fmp.GetTickerPrice(ticker, apiKey)
-			if err != nil {
-				w.WriteHeader(404)
-				w.Write([]byte("could not find ticker :("))
-				return
-			}
-
-			// save this ticker to cache
-			cache.PRICE_CACHE.SaveTickerToCache(tData)
-
-			json.MarshalWrite(w, tData)
-			return
-		}
-
-		json.MarshalWrite(w, cachedTicker)
+		json.MarshalWrite(w, searchResults)
 	}
 }

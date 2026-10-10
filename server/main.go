@@ -25,8 +25,8 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-
-	r.Get("/search", routes.SearchTicker(FMP_API_KEY))
+	r.Get("/", routes.TickerRoute(FMP_API_KEY))
+	r.Get("/search", routes.SearchTickerRoute(FMP_API_KEY))
 
 	http.ListenAndServe(":8080", r)
 }
