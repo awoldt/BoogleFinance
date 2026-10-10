@@ -88,5 +88,15 @@ func SearchTicker(ticker, apiKey string) ([]SearchTickerResult, error) {
 		}
 	}
 
+	// need to order the results to make it friendly for end user
+	// if you search "AMZN", that should be the first result shown
+	// basically... show exact matches for symbols at top of search results feed on UI
+	for i, v := range finalResults {
+		if v.Symbol == ticker {
+			finalResults[0], finalResults[i] = v, finalResults[0]
+			break
+		}
+	}
+
 	return finalResults, nil
 }
