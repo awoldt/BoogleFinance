@@ -18,6 +18,11 @@ func main() {
 		log.Fatal("error loading .env file")
 	}
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // local development
+	}
+
 	// get the FMP api key
 	FMP_API_KEY := os.Getenv("FMP_API_KEY")
 	if FMP_API_KEY == "" {
@@ -28,5 +33,5 @@ func main() {
 	r.Get("/", routes.TickerRoute(FMP_API_KEY))
 	r.Get("/search", routes.SearchTickerRoute(FMP_API_KEY))
 
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe(":"+port, r)
 }
