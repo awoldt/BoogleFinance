@@ -7,6 +7,11 @@ import {
 import { useTickerSearch } from "~/hooks/use-ticker-search";
 import type { SearchResult } from "~/lib/search";
 import {
+  loadWatchlist,
+  readWatchlistCookie,
+  writeWatchlistCookie,
+} from "~/lib/watchlist";
+import {
   ArrowIcon,
   CheckIcon,
   InfoIcon,
@@ -67,7 +72,7 @@ function WaveBackdrop() {
 
 export function FinanceHome() {
   const [query, setQuery] = useState("");
-  const [saved, setSaved] = useState<string[]>([]);
+  const [saved, setSaved] = useState<string[]>(readWatchlistCookie);
   const [lists, setLists] = useState<string[]>([]);
   const [namingList, setNamingList] = useState(false);
   const [listName, setListName] = useState("");
@@ -75,6 +80,18 @@ export function FinanceHome() {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const { results, status } = useTickerSearch(query);
+
+  // ping the server as soon as the app loads (it reads the cookie itself)
+  useEffect(() => {
+    const controller = new AbortController();
+    loadWatchlist(controller.signal).catch(() => {});
+    return () => controller.abort();
+  }, []);
+
+  // keep the cookie in sync with every add/remove
+  useEffect(() => {
+    writeWatchlistCookie(saved);
+  }, [saved]);
 
   // close the dropdown when clicking anywhere outside the search box
   useEffect(() => {
@@ -224,6 +241,27 @@ export function FinanceHome() {
                 </button>
               )}
             </div>
+
+            {saved.length > 0 && (
+              <ul className="mt-4 flex flex-wrap gap-2" aria-label="Watched stocks">
+                {saved.map((symbol) => (
+                  <li
+                    key={symbol}
+                    className="inline-flex items-center gap-1 rounded-md bg-link-bg py-1 pr-1 pl-2.5 text-[11px] font-bold tracking-wide text-link"
+                  >
+                    {symbol}
+                    <button
+                      type="button"
+                      onClick={() => toggleSaved(symbol)}
+                      aria-label={`Remove ${symbol} from watchlist`}
+                      className="flex h-5 w-5 items-center justify-center rounded-full text-sm leading-none hover:bg-hover"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
