@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import type { Direction } from "~/data/markets";
 import { useTickerSearch } from "~/hooks/use-ticker-search";
+import { directionClass, pillClass, usd } from "~/lib/format";
 import type { SearchResult } from "~/lib/search";
 import {
   loadWatchlist,
@@ -12,42 +14,11 @@ import {
   ArrowIcon,
   CheckIcon,
   ListIcon,
-  MoonIcon,
   PlusIcon,
   SearchIcon,
   SpinnerIcon,
-  SunIcon,
 } from "~/components/icons";
-
-function directionClass(direction: Direction) {
-  return direction === "up" ? "text-up" : "text-down";
-}
-
-function pillClass(direction: Direction) {
-  return direction === "up"
-    ? "bg-up-bg text-up"
-    : "bg-down-bg text-down";
-}
-
-function ThemeToggle() {
-  function toggle() {
-    const next = !document.documentElement.classList.contains("dark");
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label="Toggle color scheme"
-      className="flex h-10 w-10 items-center justify-center rounded-full text-muted hover:bg-hover"
-    >
-      <SunIcon className="hidden h-5 w-5 dark:block" />
-      <MoonIcon className="h-5 w-5 dark:hidden" />
-    </button>
-  );
-}
+import { ThemeToggle } from "~/components/theme-toggle";
 
 function WaveBackdrop() {
   return (
@@ -357,11 +328,6 @@ function SearchResultRow({
   );
 }
 
-const usd = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
 function WatchlistRow({
   symbol,
   quote,
@@ -376,13 +342,19 @@ function WatchlistRow({
   const direction: Direction = quote && quote.change < 0 ? "down" : "up";
 
   return (
-    <li className="flex items-center gap-3 border-b border-line py-3.5 last:border-b-0">
+    <li className="relative flex items-center gap-3 border-b border-line py-3.5 last:border-b-0 hover:bg-hover">
       <span className="inline-flex h-7 w-14 shrink-0 items-center justify-center rounded-md bg-[#636366] text-[11px] font-bold tracking-wide text-white">
         {symbol}
       </span>
-      <p className="min-w-0 flex-1 truncate text-[15px] text-ink">
+      {/* the link's ::after stretches over the whole row so any click opens the ticker page */}
+      <Link
+        to={`/${encodeURIComponent(symbol)}`}
+        state={{ quote }}
+        aria-label={`Open ${symbol}`}
+        className="min-w-0 flex-1 truncate text-[15px] text-ink after:absolute after:inset-0"
+      >
         {quote?.name ?? ""}
-      </p>
+      </Link>
       {quote ? (
         <>
           <p className="w-[5.5rem] shrink-0 text-right text-[15px] font-medium tabular-nums text-ink">
@@ -410,7 +382,7 @@ function WatchlistRow({
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${symbol} from watchlist`}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-link bg-link-bg text-link"
+        className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-link bg-link-bg text-link"
       >
         <CheckIcon className="h-4 w-4" />
       </button>

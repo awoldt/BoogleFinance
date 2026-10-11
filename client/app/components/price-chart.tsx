@@ -1,0 +1,230 @@
+import { useMemo, useRef, useState } from "react";
+import { buildChart, RANGES, type RangeKey } from "~/lib/chart-data";
+import { usd } from "~/lib/format";
+
+type Props = {
+  symbol: string;
+  price: number;
+  change: number;
+  timestamp: number;
+};
+
+/**
+ * Line chart drawn as one SVG path (no chart library). The hover state is
+ * written straight to the DOM from the pointer handler, so scrubbing never
+ * triggers a React render.
+ */
+export function PriceChart({ symbol, price, change, timestamp }: Props) {
+  const [range, setRange] = useState<RangeKey>("1D");
+  const chart = useMemo(
+    () => buildChart(symbol, range, price, change, timestamp),
+    [symbol, range, price, change, timestamp],
+  );
+
+  const plotRef = useRef<HTMLDivElement>(null);
+  const hoverRef = useRef<HTMLDivElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const tipPriceRef = useRef<HTMLSpanElement>(null);
+  const tipDateRef = useRef<HTMLSpanElement>(null);
+  const active = useRef(-1); // index being inspected, -1 when hidden
+
+  const last = chart.values.length - 1;
+
+  function show(index: number) {
+    const plot = plotRef.current;
+    const hover = hoverRef.current;
+    const tip = tipRef.current;
+    if (!plot || !hover || !tip || !tipPriceRef.current || !tipDateRef.current) {
+      return;
+    }
+    active.current = index;
+    const width = plot.clientWidth;
+    const x = (index / last) * width;
+
+    hover.style.setProperty("--x", `${x}px`);
+    hover.style.setProperty("--y", `${chart.ys[index]}%`);
+    tipPriceRef.current.textContent = usd.format(chart.values[index]);
+    tipDateRef.current.textContent = chart.formatTime(chart.times[index]);
+    tip.style.left = `${Math.min(Math.max(x - tip.offsetWidth / 2, 0), width - tip.offsetWidth)}px`;
+    hover.style.visibility = "visible";
+  }
+
+  function hide() {
+    active.current = -1;
+    if (hoverRef.current) hoverRef.current.style.visibility = "hidden";
+  }
+
+  function onPointer(event: React.PointerEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const fraction = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+    show(Math.round(fraction * last));
+  }
+
+  function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const current = active.current < 0 ? last : active.current;
+    let next: number;
+    switch (event.key) {
+      case "ArrowLeft":
+        next = Math.max(current - 1, 0);
+        break;
+      case "ArrowRight":
+        next = Math.min(current + 1, last);
+        break;
+      case "Home":
+        next = 0;
+        break;
+      case "End":
+        next = last;
+        break;
+      case "Escape":
+        hide();
+        return;
+      default:
+        return;
+    }
+    event.preventDefault();
+    show(next);
+  }
+
+  return (
+    <div>
+      <div
+        role="tablist"
+        aria-label="Chart range"
+        className="mt-6 flex flex-wrap gap-x-5 gap-y-1"
+      >
+        {RANGES.map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={key === range}
+            onClick={() => {
+              hide();
+              setRange(key);
+            }}
+            className={`border-b-2 py-2 text-sm font-medium ${
+              key === range
+                ? "border-link text-link"
+                : "border-transparent text-muted hover:text-ink"
+            }`}
+          >
+            {key}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className={`mt-4 pr-1 pb-7 pl-12 sm:pl-14 ${chart.rising ? "text-up" : "text-down"}`}
+      >
+        <div
+          ref={plotRef}
+          tabIndex={0}
+          aria-label={`${symbol} price chart. Use the left and right arrow keys to inspect values.`}
+          onPointerMove={onPointer}
+          onPointerDown={onPointer}
+          onPointerLeave={hide}
+          onKeyDown={onKeyDown}
+          onBlur={hide}
+          className="relative h-64 cursor-crosshair touch-pan-y outline-none select-none focus-visible:ring-2 focus-visible:ring-link sm:h-80"
+        >
+          <svg
+            viewBox="0 0 1000 100"
+            preserveAspectRatio="none"
+            className="absolute inset-0 h-full w-full overflow-visible"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="chart-fade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="currentColor" stopOpacity="0.16" />
+                <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {chart.yTicks.map((tick) => (
+              <line
+                key={tick.label}
+                x1="0"
+                x2="1000"
+                y1={tick.pct}
+                y2={tick.pct}
+                vectorEffect="non-scaling-stroke"
+                className="stroke-line"
+              />
+            ))}
+            {chart.baselinePct !== null && (
+              <line
+                x1="0"
+                x2="1000"
+                y1={chart.baselinePct}
+                y2={chart.baselinePct}
+                strokeDasharray="4 4"
+                vectorEffect="non-scaling-stroke"
+                className="stroke-faint"
+              />
+            )}
+            <path d={chart.area} fill="url(#chart-fade)" />
+            <path
+              d={chart.line}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+
+          {chart.yTicks.map((tick) => (
+            <span
+              key={tick.label}
+              style={{ top: `${tick.pct}%` }}
+              className="pointer-events-none absolute right-full -translate-y-1/2 pr-2 text-xs tabular-nums text-muted"
+            >
+              {tick.label}
+            </span>
+          ))}
+          {chart.xTicks.map((tick, i) => (
+            <span
+              key={tick.pct}
+              style={{ left: `${tick.pct}%` }}
+              className={`pointer-events-none absolute top-full -translate-x-1/2 pt-2 text-xs whitespace-nowrap text-muted ${i % 2 === 1 ? "max-sm:hidden" : ""}`}
+            >
+              {tick.label}
+            </span>
+          ))}
+          {chart.baselinePct !== null && (
+            <span
+              style={{ top: `${chart.baselinePct}%` }}
+              className="pointer-events-none absolute left-1 -translate-y-full pb-0.5 text-[11px] text-faint"
+            >
+              Previous close
+            </span>
+          )}
+
+          <div
+            ref={hoverRef}
+            style={{ visibility: "hidden" }}
+            className="pointer-events-none absolute inset-0"
+          >
+            <div
+              style={{ left: "var(--x)" }}
+              className="absolute top-0 bottom-0 w-px bg-line-strong"
+            />
+            <div
+              style={{ left: "var(--x)", top: "var(--y)" }}
+              className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current ring-2 ring-canvas"
+            />
+            <div
+              ref={tipRef}
+              className="absolute top-1 rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs whitespace-nowrap shadow-[var(--shadow)]"
+            >
+              <span ref={tipPriceRef} className="block font-medium tabular-nums text-ink" />
+              <span ref={tipDateRef} className="block text-muted" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-xs text-faint">Chart shows sample data.</p>
+    </div>
+  );
+}

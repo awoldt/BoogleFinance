@@ -12,7 +12,6 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 
-		// get ticker from url (/search?ticker=AAPL)
 		ticker := r.URL.Query().Get("ticker")
 		if ticker == "" {
 			w.WriteHeader(400)

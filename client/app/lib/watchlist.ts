@@ -25,14 +25,15 @@ export function writeSavedTickers(symbols: string[]) {
   }
 }
 
-// One entry of the /api/loadwatchlist response (extra fields like `expires`
-// and `timestamp` are ignored).
+// One entry of the /api/loadwatchlist response (the server-side cache field
+// `expires` is ignored).
 export type Quote = {
   name: string;
   symbol: string;
   price: number;
   change: number;
   changePercentage: number;
+  timestamp: number; // epoch seconds of the last price update
 };
 
 /**
