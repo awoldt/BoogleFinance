@@ -3,7 +3,7 @@
 // ends exactly on the real price. On 1D it starts at the real previous close
 // (price - change), so the day's line agrees with the header.
 
-export const RANGES = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "MAX"] as const;
+export const RANGES = ["1D", "5D", "1M", "6M", "YTD"] as const;
 export type RangeKey = (typeof RANGES)[number];
 
 export type Chart = {
@@ -29,9 +29,6 @@ const POINTS: Record<RangeKey, number> = {
   "1M": 120,
   "6M": 130,
   YTD: 130,
-  "1Y": 250,
-  "5Y": 260,
-  MAX: 300,
 };
 
 function spanMs(range: RangeKey, endMs: number): number {
@@ -48,12 +45,6 @@ function spanMs(range: RangeKey, endMs: number): number {
       const jan1 = new Date(new Date(endMs).getFullYear(), 0, 1).getTime();
       return Math.max(endMs - jan1, 7 * DAY);
     }
-    case "1Y":
-      return YEAR;
-    case "5Y":
-      return 5 * YEAR;
-    case "MAX":
-      return 25 * YEAR;
   }
 }
 
@@ -64,9 +55,6 @@ const dateFormats: Record<RangeKey, [axis: Intl.DateTimeFormatOptions, tip: Intl
   "1M": [{ month: "short", day: "numeric" }, { month: "short", day: "numeric", year: "numeric" }],
   "6M": [{ month: "short", day: "numeric" }, { month: "short", day: "numeric", year: "numeric" }],
   YTD: [{ month: "short", day: "numeric" }, { month: "short", day: "numeric", year: "numeric" }],
-  "1Y": [{ month: "short", year: "numeric" }, { month: "short", day: "numeric", year: "numeric" }],
-  "5Y": [{ year: "numeric" }, { month: "short", day: "numeric", year: "numeric" }],
-  MAX: [{ year: "numeric" }, { month: "short", day: "numeric", year: "numeric" }],
 };
 
 // small seeded PRNG so a symbol always draws the same chart
