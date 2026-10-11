@@ -15,7 +15,7 @@ export async function searchTickers(
 ): Promise<SearchResult[]> {
   const res = await fetch(
     `${API_ORIGIN}/api/search?ticker=${encodeURIComponent(query)}`,
-    { signal },
+    { method: "POST", signal },
   );
   if (!res.ok) throw new Error(`search failed (${res.status})`);
 

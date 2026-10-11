@@ -2,25 +2,19 @@ package routes
 
 import (
 	"encoding/json/v2"
-	"log"
 	"net/http"
-	"strings"
 	"watchlist/cache"
 	"watchlist/fmp"
 )
 
 func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("watchlist")
-		if err != nil {
-			w.WriteHeader(500)
-			w.Write([]byte("error reading cookie on server"))
-			return
-		}
+		w.Header().Add("Content-Type", "application/json")
 
-		log.Printf("cookie value %v", cookie.Value)
-
-		tickers := strings.Split(cookie.Value, ",")
+		// the tickers will be sent like this: ?ticker=AAPL&ticker=AMZN&ticker=PYPL
+		// will return a map with ALL the ticker values for each url param key
+		query := r.URL.Query()
+		tickers := query["ticker"]
 
 		// loop through all the tickers for a users watchlist and
 		// check cache, if not get the price

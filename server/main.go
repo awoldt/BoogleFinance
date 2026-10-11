@@ -34,13 +34,13 @@ func main() {
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
+		AllowCredentials: false,
 		MaxAge:           300,
 	}))
 
-	r.Get("/api/price", routes.TickerRoute(FMP_API_KEY))
-	r.Get("/api/search", routes.SearchTickerRoute(FMP_API_KEY))
-	r.Get("/api/loadwatchlist", routes.LoadWatchlistRoute(FMP_API_KEY))
+	r.Post("/api/price", routes.TickerRoute(FMP_API_KEY))
+	r.Post("/api/search", routes.SearchTickerRoute(FMP_API_KEY))
+	r.Post("/api/loadwatchlist", routes.LoadWatchlistRoute(FMP_API_KEY))
 
 	http.ListenAndServe(":"+port, r)
 }

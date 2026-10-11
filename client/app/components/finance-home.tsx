@@ -8,8 +8,8 @@ import { useTickerSearch } from "~/hooks/use-ticker-search";
 import type { SearchResult } from "~/lib/search";
 import {
   loadWatchlist,
-  readWatchlistCookie,
-  writeWatchlistCookie,
+  readSavedTickers,
+  writeSavedTickers,
 } from "~/lib/watchlist";
 import {
   ArrowIcon,
@@ -19,6 +19,7 @@ import {
   MoonIcon,
   PlusIcon,
   SearchIcon,
+  SpinnerIcon,
   SunIcon,
 } from "~/components/icons";
 
@@ -72,7 +73,8 @@ function WaveBackdrop() {
 
 export function FinanceHome() {
   const [query, setQuery] = useState("");
-  const [saved, setSaved] = useState<string[]>(readWatchlistCookie);
+  const [saved, setSaved] = useState<string[]>(readSavedTickers);
+  const [loadingWatchlist, setLoadingWatchlist] = useState(saved.length > 0);
   const [lists, setLists] = useState<string[]>([]);
   const [namingList, setNamingList] = useState(false);
   const [listName, setListName] = useState("");
@@ -81,16 +83,23 @@ export function FinanceHome() {
   const searchRef = useRef<HTMLDivElement>(null);
   const { results, status } = useTickerSearch(query);
 
-  // ping the server as soon as the app loads (it reads the cookie itself)
+  // ping the server as soon as the app loads. Nothing saved means nothing
+  // to load, so skip the request and the spinner.
   useEffect(() => {
+    if (saved.length === 0) return;
+
     const controller = new AbortController();
-    loadWatchlist(controller.signal).catch(() => {});
+    loadWatchlist(saved, controller.signal)
+      .catch(() => {})
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingWatchlist(false);
+      });
     return () => controller.abort();
   }, []);
 
-  // keep the cookie in sync with every add/remove
+  // keep localStorage in sync with every add/remove
   useEffect(() => {
-    writeWatchlistCookie(saved);
+    writeSavedTickers(saved);
   }, [saved]);
 
   // close the dropdown when clicking anywhere outside the search box
@@ -242,7 +251,15 @@ export function FinanceHome() {
               )}
             </div>
 
-            {saved.length > 0 && (
+            {loadingWatchlist ? (
+              <div
+                role="status"
+                className="mt-4 flex items-center gap-2 text-sm text-muted"
+              >
+                <SpinnerIcon className="h-5 w-5 text-link" />
+                Loading your watchlist…
+              </div>
+            ) : saved.length > 0 && (
               <ul className="mt-4 flex flex-wrap gap-2" aria-label="Watched stocks">
                 {saved.map((symbol) => (
                   <li

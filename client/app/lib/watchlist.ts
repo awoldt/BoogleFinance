@@ -1,41 +1,45 @@
 import { API_ORIGIN } from "~/lib/search";
 
-// The whole watchlist lives in one cookie as comma separated symbols,
-// e.g. watchlist=AAPL,TSLA,F
-const COOKIE_NAME = "watchlist";
-const ONE_YEAR = 60 * 60 * 24 * 365;
+const STORAGE_KEY = "watchlist";
 
-export function readWatchlistCookie(): string[] {
-  if (typeof document === "undefined") return [];
-
-  const entry = document.cookie
-    .split("; ")
-    .find((part) => part.startsWith(`${COOKIE_NAME}=`));
-  if (!entry) return [];
-
-  const value = decodeURIComponent(entry.slice(COOKIE_NAME.length + 1));
-  const symbols = value
-    .split(",")
-    .map((symbol) => symbol.trim())
-    .filter(Boolean);
-  return [...new Set(symbols)];
+// The user's tickers live in localStorage as a JSON array, e.g. ["AAPL","TSLA"].
+export function readSavedTickers(): string[] {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+    if (!Array.isArray(parsed)) return [];
+    const symbols = parsed.filter(
+      (item): item is string => typeof item === "string" && item !== "",
+    );
+    return [...new Set(symbols)];
+  } catch {
+    // storage blocked or the value is corrupt
+    return [];
+  }
 }
 
-export function writeWatchlistCookie(symbols: string[]) {
-  const secure = location.protocol === "https:" ? "; Secure" : "";
-  // commas are legal in cookie values, so keep them raw to stay comma separated
-  document.cookie = `${COOKIE_NAME}=${symbols.join(",")}; Path=/; Max-Age=${ONE_YEAR}; SameSite=Lax${secure}`;
+export function writeSavedTickers(symbols: string[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(symbols));
+  } catch {
+    // storage blocked or full, the watchlist just won't persist
+  }
 }
 
 /**
- * Pings the server once on app load. No params: the server reads the
- * `watchlist` cookie off the request itself. `credentials: "include"` makes
- * the browser attach cookies even when the API is on another origin.
+ * POST /api/loadwatchlist?ticker=AAPL&ticker=TSLA
+ * One `ticker` query param per symbol (none at all for an empty list).
  */
-export async function loadWatchlist(signal?: AbortSignal): Promise<void> {
-  const res = await fetch(`${API_ORIGIN}/api/loadwatchlist`, {
-    credentials: "include",
-    signal,
-  });
+export async function loadWatchlist(
+  symbols: string[],
+  signal?: AbortSignal,
+): Promise<void> {
+  const params = new URLSearchParams();
+  for (const symbol of symbols) params.append("ticker", symbol);
+
+  const query = params.toString();
+  const res = await fetch(
+    `${API_ORIGIN}/api/loadwatchlist${query ? `?${query}` : ""}`,
+    { method: "POST", signal },
+  );
   if (!res.ok) throw new Error(`loadwatchlist failed (${res.status})`);
 }
