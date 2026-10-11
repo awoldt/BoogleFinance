@@ -26,20 +26,19 @@ export function writeSavedTickers(symbols: string[]) {
 }
 
 /**
- * POST /api/loadwatchlist?ticker=AAPL&ticker=TSLA
- * One `ticker` query param per symbol (none at all for an empty list).
+ * POST /api/loadwatchlist
+ * Content-Type: application/json
+ * {"tickers": ["AAPL", "TSLA"]}
  */
 export async function loadWatchlist(
   symbols: string[],
   signal?: AbortSignal,
 ): Promise<void> {
-  const params = new URLSearchParams();
-  for (const symbol of symbols) params.append("ticker", symbol);
-
-  const query = params.toString();
-  const res = await fetch(
-    `${API_ORIGIN}/api/loadwatchlist${query ? `?${query}` : ""}`,
-    { method: "POST", signal },
-  );
+  const res = await fetch(`${API_ORIGIN}/api/loadwatchlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tickers: symbols }),
+    signal,
+  });
   if (!res.ok) throw new Error(`loadwatchlist failed (${res.status})`);
 }
