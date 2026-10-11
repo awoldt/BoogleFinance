@@ -1,20 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  interested,
-  type Direction,
-  type StockQuote,
-} from "~/data/markets";
+import type { Direction } from "~/data/markets";
 import { useTickerSearch } from "~/hooks/use-ticker-search";
 import type { SearchResult } from "~/lib/search";
 import {
   loadWatchlist,
   readSavedTickers,
   writeSavedTickers,
+  type Quote,
 } from "~/lib/watchlist";
 import {
   ArrowIcon,
   CheckIcon,
-  InfoIcon,
   ListIcon,
   MoonIcon,
   PlusIcon,
@@ -74,7 +70,9 @@ function WaveBackdrop() {
 export function FinanceHome() {
   const [query, setQuery] = useState("");
   const [saved, setSaved] = useState<string[]>(readSavedTickers);
-  const [loadingWatchlist, setLoadingWatchlist] = useState(saved.length > 0);
+  const [quotes, setQuotes] = useState<Record<string, Quote>>({});
+  const [loading, setLoading] = useState(saved.length > 0);
+  const [failed, setFailed] = useState(false);
   const [lists, setLists] = useState<string[]>([]);
   const [namingList, setNamingList] = useState(false);
   const [listName, setListName] = useState("");
@@ -83,19 +81,30 @@ export function FinanceHome() {
   const searchRef = useRef<HTMLDivElement>(null);
   const { results, status } = useTickerSearch(query);
 
-  // ping the server as soon as the app loads. Nothing saved means nothing
-  // to load, so skip the request and the spinner.
+  // load quotes on app load and again whenever the watchlist changes. Nothing
+  // saved means nothing to load, so skip the request and the spinner.
   useEffect(() => {
-    if (saved.length === 0) return;
+    if (saved.length === 0) {
+      setLoading(false);
+      setFailed(false);
+      return;
+    }
 
     const controller = new AbortController();
+    setLoading(true);
+    setFailed(false);
     loadWatchlist(saved, controller.signal)
-      .catch(() => {})
+      .then((list) => {
+        setQuotes(Object.fromEntries(list.map((quote) => [quote.symbol, quote])));
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setFailed(true);
+      })
       .finally(() => {
-        if (!controller.signal.aborted) setLoadingWatchlist(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, []);
+  }, [saved]);
 
   // keep localStorage in sync with every add/remove
   useEffect(() => {
@@ -175,28 +184,39 @@ export function FinanceHome() {
 
       <main className="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-normal text-ink">You may be interested in</h1>
-            <button
-              type="button"
-              className="text-faint"
-              aria-label="Suggested from popular stocks"
-              title="Suggested from popular stocks"
-            >
-              <InfoIcon className="h-5 w-5" />
-            </button>
-          </div>
+          <h1 className="text-xl font-normal text-ink">Your watchlist</h1>
 
-          <ul className="mt-2">
-            {interested.map((stock) => (
-              <StockRow
-                key={stock.symbol}
-                stock={stock}
-                saved={saved.includes(stock.symbol)}
-                onToggle={() => toggleSaved(stock.symbol)}
-              />
-            ))}
-          </ul>
+          {saved.length === 0 ? (
+            <p className="mt-4 text-sm text-muted">
+              Nothing here yet. Search for a stock above and tap + to watch it.
+            </p>
+          ) : loading && saved.every((symbol) => !quotes[symbol]) ? (
+            <div
+              role="status"
+              className="mt-4 flex items-center gap-2 text-sm text-muted"
+            >
+              <SpinnerIcon className="h-5 w-5 text-link" />
+              Loading your watchlist…
+            </div>
+          ) : (
+            <ul className="mt-2">
+              {saved.map((symbol) => (
+                <WatchlistRow
+                  key={symbol}
+                  symbol={symbol}
+                  quote={quotes[symbol]}
+                  pending={loading}
+                  onRemove={() => toggleSaved(symbol)}
+                />
+              ))}
+            </ul>
+          )}
+
+          {failed && (
+            <p className="mt-3 text-sm text-down">
+              Couldn’t load prices. Try refreshing.
+            </p>
+          )}
 
           <div className="mt-8">
             <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
@@ -250,35 +270,6 @@ export function FinanceHome() {
                 </button>
               )}
             </div>
-
-            {loadingWatchlist ? (
-              <div
-                role="status"
-                className="mt-4 flex items-center gap-2 text-sm text-muted"
-              >
-                <SpinnerIcon className="h-5 w-5 text-link" />
-                Loading your watchlist…
-              </div>
-            ) : saved.length > 0 && (
-              <ul className="mt-4 flex flex-wrap gap-2" aria-label="Watched stocks">
-                {saved.map((symbol) => (
-                  <li
-                    key={symbol}
-                    className="inline-flex items-center gap-1 rounded-md bg-link-bg py-1 pr-1 pl-2.5 text-[11px] font-bold tracking-wide text-link"
-                  >
-                    {symbol}
-                    <button
-                      type="button"
-                      onClick={() => toggleSaved(symbol)}
-                      aria-label={`Remove ${symbol} from watchlist`}
-                      className="flex h-5 w-5 items-center justify-center rounded-full text-sm leading-none hover:bg-hover"
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </div>
 
@@ -366,52 +357,62 @@ function SearchResultRow({
   );
 }
 
-function StockRow({
-  stock,
-  saved,
-  onToggle,
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+function WatchlistRow({
+  symbol,
+  quote,
+  pending,
+  onRemove,
 }: {
-  stock: StockQuote;
-  saved: boolean;
-  onToggle: () => void;
+  symbol: string;
+  quote: Quote | undefined;
+  pending: boolean;
+  onRemove: () => void;
 }) {
+  const direction: Direction = quote && quote.change < 0 ? "down" : "up";
+
   return (
     <li className="flex items-center gap-3 border-b border-line py-3.5 last:border-b-0">
-      <span
-        className="inline-flex h-7 w-14 shrink-0 items-center justify-center rounded-md text-[11px] font-bold tracking-wide text-white"
-        style={{ backgroundColor: stock.color }}
-      >
-        {stock.symbol}
+      <span className="inline-flex h-7 w-14 shrink-0 items-center justify-center rounded-md bg-[#636366] text-[11px] font-bold tracking-wide text-white">
+        {symbol}
       </span>
-      <p className="min-w-0 flex-1 truncate text-[15px] text-ink">{stock.name}</p>
-      <p className="w-[5.5rem] shrink-0 text-right text-[15px] font-medium tabular-nums text-ink">
-        {stock.price}
+      <p className="min-w-0 flex-1 truncate text-[15px] text-ink">
+        {quote?.name ?? ""}
       </p>
-      <p
-        className={`hidden w-[4.75rem] shrink-0 text-right text-sm tabular-nums sm:block ${directionClass(stock.direction)}`}
-      >
-        {stock.change}
-      </p>
-      <span
-        className={`inline-flex w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded-full px-2 py-1 text-sm font-medium tabular-nums ${pillClass(stock.direction)}`}
-      >
-        <ArrowIcon direction={stock.direction} />
-        {stock.percent}
-      </span>
+      {quote ? (
+        <>
+          <p className="w-[5.5rem] shrink-0 text-right text-[15px] font-medium tabular-nums text-ink">
+            {usd.format(quote.price)}
+          </p>
+          <p
+            className={`hidden w-[4.75rem] shrink-0 text-right text-sm tabular-nums sm:block ${directionClass(direction)}`}
+          >
+            {quote.change < 0 ? "-" : "+"}
+            {usd.format(Math.abs(quote.change))}
+          </p>
+          <span
+            className={`inline-flex w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded-full px-2 py-1 text-sm font-medium tabular-nums ${pillClass(direction)}`}
+          >
+            <ArrowIcon direction={direction} />
+            {Math.abs(quote.changePercentage).toFixed(2)}%
+          </span>
+        </>
+      ) : (
+        <span className="flex w-[5.5rem] shrink-0 justify-end text-muted sm:w-[15.75rem]">
+          {pending ? <SpinnerIcon className="h-4 w-4" /> : "—"}
+        </span>
+      )}
       <button
         type="button"
-        onClick={onToggle}
-        aria-pressed={saved}
-        aria-label={
-          saved ? `Remove ${stock.symbol} from watchlist` : `Add ${stock.symbol} to watchlist`
-        }
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
-          saved
-            ? "border-link bg-link-bg text-link"
-            : "border-line-strong text-muted hover:bg-hover"
-        }`}
+        onClick={onRemove}
+        aria-label={`Remove ${symbol} from watchlist`}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-link bg-link-bg text-link"
       >
-        {saved ? <CheckIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />}
+        <CheckIcon className="h-4 w-4" />
       </button>
     </li>
   );

@@ -9,16 +9,6 @@ export type IndexQuote = {
   direction: Direction;
 };
 
-export type StockQuote = {
-  symbol: string;
-  name: string;
-  price: string;
-  change: string;
-  percent: string;
-  direction: Direction;
-  color: string;
-};
-
 export type Trend = {
   id: string;
   label: string;
@@ -79,63 +69,6 @@ export const indexes: IndexQuote[] = [
     change: "-0.19",
     percent: "-1.01%",
     direction: "down",
-  },
-];
-
-export const interested: StockQuote[] = [
-  {
-    symbol: "TSLA",
-    name: "Tesla Inc",
-    price: "$459.34",
-    change: "+$14.61",
-    percent: "3.29%",
-    direction: "up",
-    color: "#e10600",
-  },
-  {
-    symbol: "F",
-    name: "Ford Motor Co",
-    price: "$12.15",
-    change: "+$0.19",
-    percent: "1.63%",
-    direction: "up",
-    color: "#002f6c",
-  },
-  {
-    symbol: "BABA",
-    name: "Alibaba Group Holding Ltd.",
-    price: "$180.81",
-    change: "+$2.13",
-    percent: "1.19%",
-    direction: "up",
-    color: "#ff6a00",
-  },
-  {
-    symbol: "AMZN",
-    name: "Amazon.com Inc",
-    price: "$221.77",
-    change: "+$2.20",
-    percent: "1.00%",
-    direction: "up",
-    color: "#c45500",
-  },
-  {
-    symbol: "NXST",
-    name: "Nexstar Media Group Inc",
-    price: "$196.09",
-    change: "-$1.65",
-    percent: "0.83%",
-    direction: "down",
-    color: "#5f6368",
-  },
-  {
-    symbol: "AAPL",
-    name: "Apple Inc",
-    price: "$256.37",
-    change: "+$1.73",
-    percent: "0.68%",
-    direction: "up",
-    color: "#636366",
   },
 ];
 

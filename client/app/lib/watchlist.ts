@@ -25,6 +25,16 @@ export function writeSavedTickers(symbols: string[]) {
   }
 }
 
+// One entry of the /api/loadwatchlist response (extra fields like `expires`
+// and `timestamp` are ignored).
+export type Quote = {
+  name: string;
+  symbol: string;
+  price: number;
+  change: number;
+  changePercentage: number;
+};
+
 /**
  * POST /api/loadwatchlist
  * Content-Type: application/json
@@ -33,7 +43,7 @@ export function writeSavedTickers(symbols: string[]) {
 export async function loadWatchlist(
   symbols: string[],
   signal?: AbortSignal,
-): Promise<void> {
+): Promise<Quote[]> {
   const res = await fetch(`${API_ORIGIN}/api/loadwatchlist`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -41,4 +51,7 @@ export async function loadWatchlist(
     signal,
   });
   if (!res.ok) throw new Error(`loadwatchlist failed (${res.status})`);
+
+  const data: Quote[] | null = await res.json();
+  return data ?? [];
 }
