@@ -20,8 +20,8 @@ func SearchTicker(ticker, apiKey string) ([]SearchTickerResult, error) {
 	// 2. symbol search (AMZN)
 	// combine unique results
 
-	companySearchUrl := fmt.Sprintf("https://financialmodelingprep.com/stable/search-name?query=%v&apikey=%v", ticker, apiKey)
-	symbolSearchUrl := fmt.Sprintf("https://financialmodelingprep.com/stable/search-symbol?query=%v&apikey=%v", ticker, apiKey)
+	companySearchUrl := fmt.Sprintf("https://financialmodelingprep.com/stable/search-name?query=%v&apikey=%v&limit=10", ticker, apiKey)
+	symbolSearchUrl := fmt.Sprintf("https://financialmodelingprep.com/stable/search-symbol?query=%v&apikey=%v&limit=10", ticker, apiKey)
 
 	companySearchReq, err := HttpClient.Get(companySearchUrl)
 	if err != nil {
