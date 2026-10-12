@@ -26,7 +26,7 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 
 		// loop through all the tickers for a users watchlist and
 		// check cache, if not get the price
-		var watchlistReturn []fmp.Ticker
+		var watchlistReturn []cache.Ticker
 		for _, v := range body.Tickers {
 			hit, cachedTicker, err := cache.PRICE_CACHE.GetTickerFromCache(v, apiKey)
 			if err != nil {
@@ -36,16 +36,25 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 
 			if !hit {
 				// if not, search fmp for stock data
-				tData, err := fmp.GetTickerPrice(v, apiKey)
+				tData, err := fmp.GetTickerQuote(v, apiKey)
 				if err != nil {
 					// just continue if error getting ticker
 					continue
 				}
 
-				// save this ticker to cache
-				cache.PRICE_CACHE.SaveTickerToCache(tData)
+				tickerData := cache.Ticker{
+					Symbol:           tData.Symbol,
+					Name:             tData.Name,
+					Price:            tData.Price,
+					Change:           tData.Change,
+					ChangePercentage: tData.ChangePercentage,
+					LastUpdated:      tData.Timestamp,
+				}
 
-				watchlistReturn = append(watchlistReturn, tData)
+				// save this ticker to cache
+				cache.PRICE_CACHE.SaveTickerToCache(tickerData)
+
+				watchlistReturn = append(watchlistReturn, tickerData)
 			}
 			watchlistReturn = append(watchlistReturn, cachedTicker)
 		}

@@ -30,15 +30,24 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 
 		if !hit {
 			// if not, search fmp for stock data
-			tData, err := fmp.GetTickerPrice(ticker, apiKey)
+			tData, err := fmp.GetTickerQuote(ticker, apiKey)
 			if err != nil {
 				w.WriteHeader(404)
 				w.Write([]byte("could not find ticker :("))
 				return
 			}
 
+			tickerData := cache.Ticker{
+				Symbol:           tData.Symbol,
+				Name:             tData.Name,
+				Price:            tData.Price,
+				Change:           tData.Change,
+				ChangePercentage: tData.ChangePercentage,
+				LastUpdated:      tData.Timestamp,
+			}
+
 			// save this ticker to cache
-			cache.PRICE_CACHE.SaveTickerToCache(tData)
+			cache.PRICE_CACHE.SaveTickerToCache(tickerData)
 
 			json.MarshalWrite(w, tData)
 			return
