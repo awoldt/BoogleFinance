@@ -15,13 +15,19 @@ type PriceDetails struct {
 	Change           float32 `json:"change"`
 	ChangePercentage float32 `json:"changePercentage"`
 	LastUpdated      int     `json:"timestamp"` // epoch time in seconds when this tickers price was last updated by FMP
-	Expires          int64   `json:"expires"`   // epoch in seconds when to ping FMP to refresh this ticker stored in server cache
+	Expires          int64   `json:"expires"`   // epoch in seconds when to ping FMP to refresh this ticker's price data
+}
+
+type ChartDetails struct {
+	Prices  []fmp.ChartDataResult `json:"prices"`
+	Expires int64                 `json:"expires"` // epoch in seconds when to ping FMP to refresh this ticker's chart data
 }
 
 type Ticker struct {
 	Name         string       `json:"name"`
 	Symbol       string       `json:"symbol"`
 	PriceDetails PriceDetails `json:"priceDetails"`
+	ChartDetails ChartDetails `json:"chartDetails"`
 }
 
 type Cache struct {
@@ -50,6 +56,10 @@ func (cache *Cache) SaveTickerToCache(ticker Ticker) {
 
 			Expires: time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
 		},
+		ChartDetails: ChartDetails{
+			Prices:  ticker.ChartDetails.Prices,
+			Expires: time.Now().Add(time.Hour * 24).Unix(), // 24 hours from time of save
+		},
 	}
 
 	cache.Data[t.Symbol] = t
@@ -76,6 +86,8 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 		log.Printf("%v found in cache!", ticker)
 
 		now := time.Now().Unix()
+
+		// check price cache
 		if now >= t.PriceDetails.Expires {
 			// expired
 			// refetch data from fmp and save new cache
@@ -97,10 +109,45 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 					ChangePercentage: refreshedData.ChangePercentage,
 					LastUpdated:      refreshedData.Timestamp,
 				},
+				ChartDetails: ChartDetails{
+					Prices:  t.ChartDetails.Prices,
+					Expires: t.ChartDetails.Expires,
+				},
 			}
 
 			cache.SaveTickerToCache(tickerData)
 			return true, tickerData, nil
+		}
+
+		// check chart cache
+		if now >= t.ChartDetails.Expires {
+			// expired
+			// refetch chart data
+			refreshedData, err := fmp.GetChartData(ticker, apiKey)
+			if err != nil {
+				log.Printf("ERROR: failed to update cache with new ticker chart data: %v", err)
+
+				return true, Ticker{}, err
+			}
+
+			tickerData := Ticker{
+				Symbol: t.Symbol,
+				Name:   t.Name,
+				PriceDetails: PriceDetails{
+					Price:            t.PriceDetails.Price,
+					Change:           t.PriceDetails.Change,
+					ChangePercentage: t.PriceDetails.ChangePercentage,
+					LastUpdated:      t.PriceDetails.LastUpdated,
+				},
+				ChartDetails: ChartDetails{
+					Prices:  refreshedData,
+					Expires: t.ChartDetails.Expires,
+				},
+			}
+
+			cache.SaveTickerToCache(tickerData)
+			return true, tickerData, nil
+
 		}
 
 		return true, t, nil

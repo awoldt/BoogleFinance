@@ -34,11 +34,24 @@ export type PriceDetails = {
   timestamp: number; // epoch seconds of the last price update
 };
 
-// One entry of the /api/loadwatchlist response.
+// One daily close, e.g. {date: "2026-10-21", price: 314.14}.
+export type ChartPoint = {
+  date: string; // YYYY-MM-DD
+  price: number;
+};
+
+// Up to a year of daily closes, newest first (the server-side cache field
+// `expires` is ignored). The server sends `null` when it couldn't get them.
+export type ChartDetails = {
+  prices: ChartPoint[] | null;
+};
+
+// One entry of the /api/loadwatchlist response, and the /api/ticker response.
 export type Quote = {
   name: string;
   symbol: string;
   priceDetails: PriceDetails;
+  chartDetails?: ChartDetails;
 };
 
 /**

@@ -19,7 +19,7 @@ type TickerQuoteResult struct {
 }
 
 func GetTickerQuote(ticker, apiKey string) (TickerQuoteResult, error) {
-	log.Printf("getting ticker data for %v", ticker)
+	log.Printf("getting ticker price data for %v", ticker)
 	url := fmt.Sprintf("https://financialmodelingprep.com/stable/quote?symbol=%v&apikey=%v", ticker, apiKey)
 	res, err := HttpClient.Get(url)
 

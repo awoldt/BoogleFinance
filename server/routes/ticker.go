@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json/v2"
+	"log"
 	"net/http"
 	"strings"
 	"watchlist/cache"
@@ -29,29 +30,38 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !hit {
-			// if not, search fmp for stock data
-			tData, err := fmp.GetTickerQuote(ticker, apiKey)
+			// if not, search fmp for stock data (chart + price)
+			priceData, err := fmp.GetTickerQuote(ticker, apiKey)
 			if err != nil {
 				w.WriteHeader(404)
 				w.Write([]byte("could not find ticker :("))
 				return
 			}
 
+			chartData, err := fmp.GetChartData(ticker, apiKey)
+			if err != nil {
+				// dont throw error on getting chart data
+				log.Printf("error while getting chart data on new ticker fetch %v", err)
+			}
+
 			tickerData := cache.Ticker{
-				Symbol: tData.Symbol,
-				Name:   tData.Name,
+				Symbol: priceData.Symbol,
+				Name:   priceData.Name,
 				PriceDetails: cache.PriceDetails{
-					Price:            tData.Price,
-					Change:           tData.Change,
-					ChangePercentage: tData.ChangePercentage,
-					LastUpdated:      tData.Timestamp,
+					Price:            priceData.Price,
+					Change:           priceData.Change,
+					ChangePercentage: priceData.ChangePercentage,
+					LastUpdated:      priceData.Timestamp,
+				},
+				ChartDetails: cache.ChartDetails{
+					Prices: chartData,
 				},
 			}
 
 			// save this ticker to cache
 			cache.PRICE_CACHE.SaveTickerToCache(tickerData)
 
-			json.MarshalWrite(w, tData)
+			json.MarshalWrite(w, tickerData)
 			return
 		}
 

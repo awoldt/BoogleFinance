@@ -6,7 +6,10 @@ import { PriceChart } from "~/components/price-chart";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { directionClass, pillClass, usd } from "~/lib/format";
 import { fetchTicker, TickerNotFoundError } from "~/lib/ticker";
-import type { Quote } from "~/lib/watchlist";
+import type { ChartPoint, Quote } from "~/lib/watchlist";
+
+// stable reference so the chart isn't rebuilt on every render without data
+const EMPTY_PRICES: ChartPoint[] = [];
 
 const updatedFormat = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -89,6 +92,7 @@ export function TickerPage({ symbol }: { symbol: string }) {
 function QuoteView({ quote }: { quote: Quote }) {
   const { price, change, changePercentage, timestamp } = quote.priceDetails;
   const direction: Direction = change < 0 ? "down" : "up";
+  const prices = quote.chartDetails?.prices ?? EMPTY_PRICES;
 
   return (
     <section className="mt-6">
@@ -123,12 +127,7 @@ function QuoteView({ quote }: { quote: Quote }) {
         </p>
       )}
 
-      <PriceChart
-        symbol={quote.symbol}
-        price={price}
-        change={change}
-        timestamp={timestamp}
-      />
+      <PriceChart symbol={quote.symbol} prices={prices} />
     </section>
   );
 }

@@ -38,7 +38,7 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	r.Post("/api/price", routes.TickerRoute(FMP_API_KEY))
+	r.Post("/api/ticker", routes.TickerRoute(FMP_API_KEY))
 	r.Post("/api/search", routes.SearchTickerRoute(FMP_API_KEY))
 	r.Post("/api/loadwatchlist", routes.LoadWatchlistRoute(FMP_API_KEY))
 

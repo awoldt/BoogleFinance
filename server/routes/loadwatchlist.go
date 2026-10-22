@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json/v2"
+	"log"
 	"net/http"
 	"watchlist/cache"
 	"watchlist/fmp"
@@ -36,20 +37,30 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 
 			if !hit {
 				// if not, search fmp for stock data
-				tData, err := fmp.GetTickerQuote(v, apiKey)
+				priceData, err := fmp.GetTickerQuote(v, apiKey)
 				if err != nil {
-					// just continue if error getting ticker
-					continue
+					w.WriteHeader(404)
+					w.Write([]byte("could not find ticker :("))
+					return
+				}
+
+				chartData, err := fmp.GetChartData(v, apiKey)
+				if err != nil {
+					// dont throw error on getting chart data
+					log.Printf("error while getting chart data on new ticker fetch %v", err)
 				}
 
 				tickerData := cache.Ticker{
-					Symbol: tData.Symbol,
-					Name:   tData.Name,
+					Symbol: priceData.Symbol,
+					Name:   priceData.Name,
 					PriceDetails: cache.PriceDetails{
-						Price:            tData.Price,
-						Change:           tData.Change,
-						ChangePercentage: tData.ChangePercentage,
-						LastUpdated:      tData.Timestamp,
+						Price:            priceData.Price,
+						Change:           priceData.Change,
+						ChangePercentage: priceData.ChangePercentage,
+						LastUpdated:      priceData.Timestamp,
+					},
+					ChartDetails: cache.ChartDetails{
+						Prices: chartData,
 					},
 				}
 
@@ -57,8 +68,10 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 				cache.PRICE_CACHE.SaveTickerToCache(tickerData)
 
 				watchlistReturn = append(watchlistReturn, tickerData)
+			} else {
+				watchlistReturn = append(watchlistReturn, cachedTicker)
 			}
-			watchlistReturn = append(watchlistReturn, cachedTicker)
+
 		}
 
 		json.MarshalWrite(w, watchlistReturn)
