@@ -10,20 +10,23 @@ import (
 	"watchlist/fmp"
 )
 
-type Ticker struct {
-	Name             string  `json:"name"`
-	Symbol           string  `json:"symbol"`
+type PriceDetails struct {
 	Price            float32 `json:"price"`
 	Change           float32 `json:"change"`
 	ChangePercentage float32 `json:"changePercentage"`
 	LastUpdated      int     `json:"timestamp"` // epoch time in seconds when this tickers price was last updated by FMP
+	Expires          int64   `json:"expires"`   // epoch in seconds when to ping FMP to refresh this ticker stored in server cache
+}
 
-	Expires int64 `json:"expires"` // epoch in seconds when to ping FMP to refresh this ticker stored in server cache
+type Ticker struct {
+	Name         string       `json:"name"`
+	Symbol       string       `json:"symbol"`
+	PriceDetails PriceDetails `json:"priceDetails"`
 }
 
 type Cache struct {
 	Mu   sync.RWMutex
-	Data map[string]Ticker // a map of all the tickers and their price data
+	Data map[string]Ticker // a map of all the tickers (including price and chart data)
 }
 
 // THIS IS THE SINGLE CACHE STRUCT THE SERVER WILL READ/WRITE FROM
@@ -37,14 +40,16 @@ func (cache *Cache) SaveTickerToCache(ticker Ticker) {
 	defer cache.Mu.Unlock()
 
 	var t Ticker = Ticker{
-		Name:             ticker.Name,
-		Symbol:           ticker.Symbol,
-		Price:            ticker.Price,
-		Change:           ticker.Change,
-		ChangePercentage: ticker.ChangePercentage,
-		LastUpdated:      ticker.LastUpdated,
+		Name:   ticker.Name,
+		Symbol: ticker.Symbol,
+		PriceDetails: PriceDetails{
+			Price:            ticker.PriceDetails.Price,
+			Change:           ticker.PriceDetails.Change,
+			ChangePercentage: ticker.PriceDetails.ChangePercentage,
+			LastUpdated:      ticker.PriceDetails.LastUpdated,
 
-		Expires: time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
+			Expires: time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
+		},
 	}
 
 	cache.Data[t.Symbol] = t
@@ -71,7 +76,7 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 		log.Printf("%v found in cache!", ticker)
 
 		now := time.Now().Unix()
-		if now >= t.Expires {
+		if now >= t.PriceDetails.Expires {
 			// expired
 			// refetch data from fmp and save new cache
 			log.Printf("%v cached is expired...... saving new cache record", ticker)
@@ -84,12 +89,14 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 			}
 
 			tickerData := Ticker{
-				Symbol:           refreshedData.Symbol,
-				Name:             refreshedData.Name,
-				Price:            refreshedData.Price,
-				Change:           refreshedData.Change,
-				ChangePercentage: refreshedData.ChangePercentage,
-				LastUpdated:      refreshedData.Timestamp,
+				Symbol: refreshedData.Symbol,
+				Name:   refreshedData.Name,
+				PriceDetails: PriceDetails{
+					Price:            refreshedData.Price,
+					Change:           refreshedData.Change,
+					ChangePercentage: refreshedData.ChangePercentage,
+					LastUpdated:      refreshedData.Timestamp,
+				},
 			}
 
 			cache.SaveTickerToCache(tickerData)

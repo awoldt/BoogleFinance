@@ -339,7 +339,8 @@ function WatchlistRow({
   pending: boolean;
   onRemove: () => void;
 }) {
-  const direction: Direction = quote && quote.change < 0 ? "down" : "up";
+  const details = quote?.priceDetails;
+  const direction: Direction = details && details.change < 0 ? "down" : "up";
 
   return (
     <li className="relative flex items-center gap-3 border-b border-line py-3.5 last:border-b-0 hover:bg-hover">
@@ -355,22 +356,22 @@ function WatchlistRow({
       >
         {quote?.name ?? ""}
       </Link>
-      {quote ? (
+      {details ? (
         <>
           <p className="w-[5.5rem] shrink-0 text-right text-[15px] font-medium tabular-nums text-ink">
-            {usd.format(quote.price)}
+            {usd.format(details.price)}
           </p>
           <p
             className={`hidden w-[4.75rem] shrink-0 text-right text-sm tabular-nums sm:block ${directionClass(direction)}`}
           >
-            {quote.change < 0 ? "-" : "+"}
-            {usd.format(Math.abs(quote.change))}
+            {details.change < 0 ? "-" : "+"}
+            {usd.format(Math.abs(details.change))}
           </p>
           <span
             className={`inline-flex w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded-full px-2 py-1 text-sm font-medium tabular-nums ${pillClass(direction)}`}
           >
             <ArrowIcon direction={direction} />
-            {Math.abs(quote.changePercentage).toFixed(2)}%
+            {Math.abs(details.changePercentage).toFixed(2)}%
           </span>
         </>
       ) : (

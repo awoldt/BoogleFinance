@@ -38,12 +38,14 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 			}
 
 			tickerData := cache.Ticker{
-				Symbol:           tData.Symbol,
-				Name:             tData.Name,
-				Price:            tData.Price,
-				Change:           tData.Change,
-				ChangePercentage: tData.ChangePercentage,
-				LastUpdated:      tData.Timestamp,
+				Symbol: tData.Symbol,
+				Name:   tData.Name,
+				PriceDetails: cache.PriceDetails{
+					Price:            tData.Price,
+					Change:           tData.Change,
+					ChangePercentage: tData.ChangePercentage,
+					LastUpdated:      tData.Timestamp,
+				},
 			}
 
 			// save this ticker to cache

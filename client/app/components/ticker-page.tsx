@@ -22,7 +22,7 @@ function readSeed(state: unknown, symbol: string): Quote | null {
   const quote = (state as { quote?: Quote } | null)?.quote;
   if (
     quote &&
-    typeof quote.price === "number" &&
+    typeof quote.priceDetails?.price === "number" &&
     quote.symbol?.toUpperCase() === symbol
   ) {
     return quote;
@@ -87,7 +87,8 @@ export function TickerPage({ symbol }: { symbol: string }) {
 }
 
 function QuoteView({ quote }: { quote: Quote }) {
-  const direction: Direction = quote.change < 0 ? "down" : "up";
+  const { price, change, changePercentage, timestamp } = quote.priceDetails;
+  const direction: Direction = change < 0 ? "down" : "up";
 
   return (
     <section className="mt-6">
@@ -102,31 +103,31 @@ function QuoteView({ quote }: { quote: Quote }) {
 
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <p className="text-4xl tabular-nums text-ink sm:text-5xl">
-          {usd.format(quote.price)}
+          {usd.format(price)}
         </p>
         <span
           className={`inline-flex items-center gap-0.5 rounded-full px-3 py-1 text-sm font-medium tabular-nums ${pillClass(direction)}`}
         >
           <ArrowIcon direction={direction} />
-          {Math.abs(quote.changePercentage).toFixed(2)}%
+          {Math.abs(changePercentage).toFixed(2)}%
         </span>
         <span className={`text-base tabular-nums ${directionClass(direction)}`}>
-          {quote.change < 0 ? "-" : "+"}
-          {usd.format(Math.abs(quote.change))} today
+          {change < 0 ? "-" : "+"}
+          {usd.format(Math.abs(change))} today
         </span>
       </div>
 
-      {quote.timestamp > 0 && (
+      {timestamp > 0 && (
         <p className="mt-3 text-sm text-muted">
-          Last updated: {updatedFormat.format(quote.timestamp * 1000)}
+          Last updated: {updatedFormat.format(timestamp * 1000)}
         </p>
       )}
 
       <PriceChart
         symbol={quote.symbol}
-        price={quote.price}
-        change={quote.change}
-        timestamp={quote.timestamp}
+        price={price}
+        change={change}
+        timestamp={timestamp}
       />
     </section>
   );
