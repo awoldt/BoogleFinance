@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 	"watchlist/cache"
 	"watchlist/fmp"
 )
@@ -52,9 +53,11 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 					Change:           priceData.Change,
 					ChangePercentage: priceData.ChangePercentage,
 					LastUpdated:      priceData.Timestamp,
+					Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
 				},
 				ChartDetails: cache.ChartDetails{
-					Prices: chartData,
+					Prices:  chartData,
+					Expires: time.Now().Add(time.Hour * 24).Unix(), // 24 hours from time of save
 				},
 			}
 

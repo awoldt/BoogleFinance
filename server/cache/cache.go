@@ -53,12 +53,11 @@ func (cache *Cache) SaveTickerToCache(ticker Ticker) {
 			Change:           ticker.PriceDetails.Change,
 			ChangePercentage: ticker.PriceDetails.ChangePercentage,
 			LastUpdated:      ticker.PriceDetails.LastUpdated,
-
-			Expires: time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
+			Expires:          ticker.PriceDetails.Expires,
 		},
 		ChartDetails: ChartDetails{
 			Prices:  ticker.ChartDetails.Prices,
-			Expires: time.Now().Add(time.Hour * 24).Unix(), // 24 hours from time of save
+			Expires: ticker.ChartDetails.Expires,
 		},
 	}
 
@@ -71,7 +70,7 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 	// MAKE SURE TO UNLOCK!
 	cache.Mu.RLock()
 
-	t, ok := cache.Data[ticker]
+	cachedTicker, ok := cache.Data[ticker]
 	cache.Mu.RUnlock() // once we read from cache, no need for this read lock anymore
 
 	if !ok {
@@ -87,8 +86,10 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 
 		now := time.Now().Unix()
 
+		var tickerData Ticker = cachedTicker
+
 		// check price cache
-		if now >= t.PriceDetails.Expires {
+		if now >= cachedTicker.PriceDetails.Expires {
 			// expired
 			// refetch data from fmp and save new cache
 			log.Printf("%v cached is expired...... saving new cache record", ticker)
@@ -100,7 +101,7 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 				return true, Ticker{}, err
 			}
 
-			tickerData := Ticker{
+			tickerData = Ticker{
 				Symbol: refreshedData.Symbol,
 				Name:   refreshedData.Name,
 				PriceDetails: PriceDetails{
@@ -108,19 +109,19 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 					Change:           refreshedData.Change,
 					ChangePercentage: refreshedData.ChangePercentage,
 					LastUpdated:      refreshedData.Timestamp,
+					Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
 				},
 				ChartDetails: ChartDetails{
-					Prices:  t.ChartDetails.Prices,
-					Expires: t.ChartDetails.Expires,
+					Prices:  cachedTicker.ChartDetails.Prices,
+					Expires: cachedTicker.ChartDetails.Expires,
 				},
 			}
 
 			cache.SaveTickerToCache(tickerData)
-			return true, tickerData, nil
 		}
 
 		// check chart cache
-		if now >= t.ChartDetails.Expires {
+		if now >= cachedTicker.ChartDetails.Expires {
 			// expired
 			// refetch chart data
 			refreshedData, err := fmp.GetChartData(ticker, apiKey)
@@ -130,26 +131,19 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string) (found bool, Ticke
 				return true, Ticker{}, err
 			}
 
-			tickerData := Ticker{
-				Symbol: t.Symbol,
-				Name:   t.Name,
-				PriceDetails: PriceDetails{
-					Price:            t.PriceDetails.Price,
-					Change:           t.PriceDetails.Change,
-					ChangePercentage: t.PriceDetails.ChangePercentage,
-					LastUpdated:      t.PriceDetails.LastUpdated,
-				},
+			tickerData = Ticker{
+				Symbol:       tickerData.Symbol,
+				Name:         tickerData.Name,
+				PriceDetails: tickerData.PriceDetails,
 				ChartDetails: ChartDetails{
 					Prices:  refreshedData,
-					Expires: t.ChartDetails.Expires,
+					Expires: time.Now().Add(time.Hour * 24).Unix(), // 24 hours from time of save
 				},
 			}
 
 			cache.SaveTickerToCache(tickerData)
-			return true, tickerData, nil
-
 		}
 
-		return true, t, nil
+		return true, tickerData, nil
 	}
 }
