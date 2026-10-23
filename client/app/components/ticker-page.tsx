@@ -127,7 +127,7 @@ function QuoteView({ quote }: { quote: Quote }) {
         </p>
       )}
 
-      <PriceChart symbol={quote.symbol} prices={prices} />
+      <PriceChart symbol={quote.symbol} price={price} prices={prices} />
     </section>
   );
 }

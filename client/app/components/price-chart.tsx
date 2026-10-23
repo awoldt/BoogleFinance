@@ -1,14 +1,24 @@
 import { useMemo, useRef, useState } from "react";
 import { buildChart, RANGES, type Chart, type RangeKey } from "~/lib/chart-data";
-import { usd } from "~/lib/format";
+import { ArrowIcon } from "~/components/icons";
+import type { Direction } from "~/data/markets";
+import { directionClass, pillClass, usd } from "~/lib/format";
 import type { ChartPoint } from "~/lib/watchlist";
 
 type Props = {
   symbol: string;
+  price: number; // latest price, what each range is measured against
   prices: ChartPoint[];
 };
 
-export function PriceChart({ symbol, prices }: Props) {
+const RANGE_LABELS: Record<RangeKey, string> = {
+  "5D": "past 5 days",
+  "1M": "past month",
+  "6M": "past 6 months",
+  "1Y": "past year",
+};
+
+export function PriceChart({ symbol, price, prices }: Props) {
   const [range, setRange] = useState<RangeKey>("1M");
   // every range is a slice of the prices already in the browser
   const chart = useMemo(() => buildChart(prices, range), [prices, range]);
@@ -19,33 +29,61 @@ export function PriceChart({ symbol, prices }: Props) {
 
   return (
     <div>
-      <div
-        role="tablist"
-        aria-label="Chart range"
-        className="mt-6 flex flex-wrap gap-x-5 gap-y-1"
-      >
-        {RANGES.map((key) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={key === range}
-            onClick={() => setRange(key)}
-            className={`border-b-2 py-2 text-sm font-medium ${
-              key === range
-                ? "border-link text-link"
-                : "border-transparent text-muted hover:text-ink"
-            }`}
-          >
-            {key}
-          </button>
-        ))}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-x-5 gap-y-1">
+        <div
+          role="tablist"
+          aria-label="Chart range"
+          className="flex flex-wrap gap-x-5 gap-y-1"
+        >
+          {RANGES.map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={key === range}
+              onClick={() => setRange(key)}
+              className={`border-b-2 py-2 text-sm font-medium ${
+                key === range
+                  ? "border-link text-link"
+                  : "border-transparent text-muted hover:text-ink"
+              }`}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+
+        <RangeChange from={chart.values[0]} to={price} label={RANGE_LABELS[range]} />
       </div>
 
       {/* keyed so a new range starts with the hover state cleared */}
       <ChartPlot key={range} symbol={symbol} chart={chart} />
 
       <p className="text-xs text-faint">Daily closing prices.</p>
+    </div>
+  );
+}
+
+/** How far the price moved from the first close of the range to the latest price. */
+function RangeChange({ from, to, label }: { from: number; to: number; label: string }) {
+  if (!(from > 0)) return null;
+
+  const change = to - from;
+  const direction: Direction = change < 0 ? "down" : "up";
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm tabular-nums">
+      <span
+        className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 font-medium ${pillClass(direction)}`}
+      >
+        <ArrowIcon direction={direction} />
+        {Math.abs((change / from) * 100).toFixed(2)}%
+      </span>
+      <span className={directionClass(direction)}>
+        {change < 0 ? "-" : "+"}
+        {usd.format(Math.abs(change))}
+      </span>
+      <span className="text-muted">{label}</span>
     </div>
   );
 }
