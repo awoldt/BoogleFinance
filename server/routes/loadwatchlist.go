@@ -54,10 +54,6 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 						LastUpdated:      priceData.Timestamp,
 						Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
 					},
-					ChartDetails: cache.ChartDetails{
-						Prices:  cachedTicker.ChartDetails.Prices,
-						Expires: cachedTicker.ChartDetails.Expires,
-					},
 				}
 
 				// save this ticker to cache
