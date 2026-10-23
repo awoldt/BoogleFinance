@@ -28,7 +28,7 @@ type Ticker struct {
 	Name         string       `json:"name"`
 	Symbol       string       `json:"symbol"`
 	PriceDetails PriceDetails `json:"priceDetails"`
-	ChartDetails ChartDetails `json:"chartDetails"`
+	ChartDetails ChartDetails `json:"chartDetails,omitzero"`
 }
 
 type Cache struct {

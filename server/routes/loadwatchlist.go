@@ -44,6 +44,7 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 					return
 				}
 
+				// dont set chart data and let be 0 value (saved payload size)
 				tickerData := cache.Ticker{
 					Symbol: priceData.Symbol,
 					Name:   priceData.Name,
@@ -58,9 +59,11 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 
 				// save this ticker to cache
 				cache.PRICE_CACHE.SaveTickerToCache(tickerData)
-
 				watchlistReturn = append(watchlistReturn, tickerData)
 			} else {
+				// dont set chart data and let be 0 value (saved payload size)
+				cachedTicker.ChartDetails = cache.ChartDetails{}
+
 				watchlistReturn = append(watchlistReturn, cachedTicker)
 			}
 
