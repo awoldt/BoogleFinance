@@ -101,9 +101,6 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 						return true, Ticker{}, err
 					}
 
-					// save to cache
-					PRICE_CACHE.SaveTickerToCache(cachedTicker)
-
 				}
 
 				return true, cachedTicker, nil
@@ -117,8 +114,6 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 						return true, Ticker{}, err
 					}
 
-					// save to cache
-					PRICE_CACHE.SaveTickerToCache(cachedTicker)
 				}
 
 				return true, cachedTicker, nil
@@ -132,8 +127,6 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 						return true, Ticker{}, err
 					}
 
-					// save to cache
-					PRICE_CACHE.SaveTickerToCache(final)
 				}
 
 				if now >= final.ChartDetails.Expires {
@@ -142,8 +135,6 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 						return true, Ticker{}, err
 					}
 
-					// save to cache
-					PRICE_CACHE.SaveTickerToCache(final)
 				}
 
 				return true, final, nil
@@ -174,6 +165,9 @@ func refreshTickerPrice(tickerCache *Ticker, apiKey string) (err error) {
 		Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
 	}
 
+	// save to cache
+	PRICE_CACHE.SaveTickerToCache(*tickerCache)
+
 	return nil
 }
 
@@ -190,6 +184,9 @@ func refreshTickerChart(tickerCache *Ticker, apiKey string) (err error) {
 		Prices:  refreshedData,
 		Expires: time.Now().Add(time.Hour * 24).Unix(), // 24 hours from time of save
 	}
+
+	// save to cache
+	PRICE_CACHE.SaveTickerToCache(*tickerCache)
 
 	return nil
 }
