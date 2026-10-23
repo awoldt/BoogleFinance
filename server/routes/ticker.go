@@ -23,7 +23,7 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 		ticker = strings.ToUpper(ticker)
 
 		// check if we have this ticker stored in the cache
-		hit, cachedTicker, err := cache.PRICE_CACHE.GetTickerFromCache(ticker, apiKey)
+		hit, cachedTicker, err := cache.PRICE_CACHE.GetTickerFromCache(ticker, apiKey, cache.PriceAndChart)
 		if err != nil {
 			w.WriteHeader(500)
 			w.Write([]byte("error while getting ticker details :("))

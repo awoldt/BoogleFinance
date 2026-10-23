@@ -2,7 +2,6 @@ package routes
 
 import (
 	"encoding/json/v2"
-	"log"
 	"net/http"
 	"time"
 	"watchlist/cache"
@@ -30,7 +29,7 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 		// check cache, if not get the price
 		var watchlistReturn []cache.Ticker
 		for _, v := range body.Tickers {
-			hit, cachedTicker, err := cache.PRICE_CACHE.GetTickerFromCache(v, apiKey)
+			hit, cachedTicker, err := cache.PRICE_CACHE.GetTickerFromCache(v, apiKey, cache.PriceOnly)
 			if err != nil {
 				// just continue if error getting ticker
 				continue
@@ -45,12 +44,6 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 					return
 				}
 
-				chartData, err := fmp.GetChartData(v, apiKey)
-				if err != nil {
-					// dont throw error on getting chart data
-					log.Printf("error while getting chart data on new ticker fetch %v", err)
-				}
-
 				tickerData := cache.Ticker{
 					Symbol: priceData.Symbol,
 					Name:   priceData.Name,
@@ -62,8 +55,8 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 						Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
 					},
 					ChartDetails: cache.ChartDetails{
-						Prices:  chartData,
-						Expires: time.Now().Add(time.Hour * 24).Unix(), // 24 hours from time of save
+						Prices:  cachedTicker.ChartDetails.Prices,
+						Expires: cachedTicker.ChartDetails.Expires,
 					},
 				}
 
