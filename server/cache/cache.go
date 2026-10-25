@@ -90,7 +90,7 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 					Expires:          time.Now().Add(PRICE_TTL).Unix(),
 				}
 
-				PRICE_CACHE.SaveTickerToCache(cachedTicker)
+				cache.SaveTickerToCache(cachedTicker)
 			}
 
 			return true, cachedTicker, nil
@@ -109,7 +109,7 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 					Expires: time.Now().Add(CHART_TTL).Unix(),
 				}
 
-				PRICE_CACHE.SaveTickerToCache(cachedTicker)
+				cache.SaveTickerToCache(cachedTicker)
 			}
 
 			return true, cachedTicker, nil
@@ -151,7 +151,7 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 			}
 
 			if saveCache {
-				PRICE_CACHE.SaveTickerToCache(cachedTicker)
+				cache.SaveTickerToCache(cachedTicker)
 			}
 
 			return true, cachedTicker, nil
