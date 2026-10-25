@@ -1,0 +1,194 @@
+package components
+
+import (
+	"time"
+	"watchlist/models"
+)
+
+// Ticker is a ticker's page: its price and a chart of its daily closes
+templ Ticker(t models.Ticker) {
+	@layout(t.Symbol+" · Finance", "Price and chart for "+t.Symbol+".") {
+		@tickerShell() {
+			@quoteView(t)
+		}
+	}
+}
+
+// TickerNotFound is the ticker page for a symbol that doesn't exist
+templ TickerNotFound(symbol string) {
+	@layout(symbol+" · Finance", "Price and chart for "+symbol+".") {
+		@tickerShell() {
+			<p class="mt-6 text-sm text-down">We couldn’t find a ticker called { symbol }.</p>
+		}
+	}
+}
+
+// TickerFailed is the ticker page when the ticker couldn't be loaded
+templ TickerFailed(symbol string) {
+	@layout(symbol+" · Finance", "Price and chart for "+symbol+".") {
+		@tickerShell() {
+			<p class="mt-6 text-sm text-down">Couldn’t load { symbol }. Try refreshing.</p>
+		}
+	}
+}
+
+templ tickerShell() {
+	<div class="min-h-screen bg-canvas">
+		<main class="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
+			<a
+				href="/"
+				class="-ml-2 inline-flex items-center gap-1 rounded-full py-1 pr-3 pl-1 text-sm font-medium text-link hover:bg-hover"
+			>
+				@backIcon("h-5 w-5")
+				Watchlist
+			</a>
+			{ children... }
+			<div class="mt-6 flex justify-end">
+				@themeToggle()
+			</div>
+		</main>
+	</div>
+	<script src="/static/ticker.js"></script>
+}
+
+templ quoteView(t models.Ticker) {
+	{{ price := float64(t.PriceDetails.Price) }}
+	{{ change := float64(t.PriceDetails.Change) }}
+	<section class="mt-6">
+		<div class="flex items-center gap-3">
+			@symbolBadge(t.Symbol)
+			<h1 class="min-w-0 truncate text-2xl font-normal text-ink">{ t.Name }</h1>
+		</div>
+		<div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+			<p class="text-4xl tabular-nums text-ink sm:text-5xl">{ usd(price) }</p>
+			<span class={ "inline-flex items-center gap-0.5 rounded-full px-3 py-1 text-sm font-medium tabular-nums", pillClass(change) }>
+				@arrowIcon(change)
+				{ percent(float64(t.PriceDetails.ChangePercentage)) }
+			</span>
+			<span class={ "text-base tabular-nums", directionClass(change) }>
+				{ signedUSD(change) } today
+			</span>
+		</div>
+		if t.PriceDetails.LastUpdated > 0 {
+			{{ updated := time.Unix(int64(t.PriceDetails.LastUpdated), 0).UTC() }}
+			<p class="mt-3 text-sm text-muted">
+				// rendered in UTC, the script switches it to the viewer's time zone
+				Last updated: <time data-local datetime={ updated.Format(time.RFC3339) }>{ updated.Format("Jan 2, 3:04 PM MST") }</time>
+			</p>
+		}
+		if data, ok := buildChartData(t.ChartDetails.Prices); ok {
+			@priceChart(t.Symbol, price, data)
+		} else {
+			<p class="mt-6 text-sm text-muted">Chart data isn’t available.</p>
+		}
+	</section>
+}
+
+// priceChart renders every range up front, the script shows the selected one
+// and draws the hover tooltip
+templ priceChart(symbol string, price float64, data chartData) {
+	<div data-chart data-points={ data.Points }>
+		<div class="mt-6 flex flex-wrap items-center justify-between gap-x-5 gap-y-1">
+			<div role="tablist" aria-label="Chart range" class="flex flex-wrap gap-x-5 gap-y-1">
+				for _, c := range data.Ranges {
+					<button
+						type="button"
+						role="tab"
+						data-range={ c.Key }
+						if c.Key == defaultRange {
+							aria-selected="true"
+						} else {
+							aria-selected="false"
+						}
+						class="border-b-2 border-transparent py-2 text-sm font-medium text-muted not-aria-selected:hover:text-ink aria-selected:border-link aria-selected:text-link"
+					>
+						{ c.Key }
+					</button>
+				}
+			</div>
+			for _, c := range data.Ranges {
+				<div data-panel={ c.Key } hidden?={ c.Key != defaultRange }>
+					@rangeChange(c.First, price, c.Label)
+				</div>
+			}
+		</div>
+		for _, c := range data.Ranges {
+			@chartPlot(symbol, c)
+		}
+		<p class="text-xs text-faint">Daily closing prices.</p>
+	</div>
+}
+
+// rangeChange is how far the price moved from the first close of the range to
+// the latest price
+templ rangeChange(from, to float64, label string) {
+	if from > 0 {
+		{{ change := to - from }}
+		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm tabular-nums">
+			<span class={ "inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 font-medium", pillClass(change) }>
+				@arrowIcon(change)
+				{ percent(change / from * 100) }
+			</span>
+			<span class={ directionClass(change) }>{ signedUSD(change) }</span>
+			<span class="text-muted">{ label }</span>
+		</div>
+	}
+}
+
+// chartPlot is a line chart drawn as one svg path (no chart library)
+templ chartPlot(symbol string, c chart) {
+	<div
+		data-panel={ c.Key }
+		hidden?={ c.Key != defaultRange }
+		class={ "mt-4 pr-1 pb-7 pl-12 sm:pl-14", templ.KV("text-up", c.Rising), templ.KV("text-down", !c.Rising) }
+	>
+		<div
+			data-plot
+			data-start={ c.Start }
+			data-lo={ c.Lo }
+			data-hi={ c.Hi }
+			tabindex="0"
+			aria-label={ symbol + " price chart. Use the left and right arrow keys to inspect values." }
+			class="relative h-64 cursor-crosshair touch-pan-y outline-none select-none focus-visible:ring-2 focus-visible:ring-link sm:h-80"
+		>
+			<svg viewBox="0 0 1000 100" preserveAspectRatio="none" class="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
+				// one gradient per range, a hidden svg's gradient can't be borrowed
+				<defs>
+					<linearGradient id={ "chart-fade-" + c.Key } x1="0" y1="0" x2="0" y2="1">
+						<stop offset="0" stop-color="currentColor" stop-opacity="0.16"></stop>
+						<stop offset="1" stop-color="currentColor" stop-opacity="0"></stop>
+					</linearGradient>
+				</defs>
+				for _, tick := range c.YTicks {
+					<line x1="0" x2="1000" y1={ pct(tick.Pct) } y2={ pct(tick.Pct) } vector-effect="non-scaling-stroke" class="stroke-line"></line>
+				}
+				<path d={ c.Area } fill={ "url(#chart-fade-" + c.Key + ")" }></path>
+				<path d={ c.Line } fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+			</svg>
+			for _, tick := range c.YTicks {
+				<span
+					style={ "top: " + pct(tick.Pct) + "%" }
+					class="pointer-events-none absolute right-full -translate-y-1/2 pr-2 text-xs tabular-nums text-muted"
+				>
+					{ tick.Label }
+				</span>
+			}
+			for i, tick := range c.XTicks {
+				<span
+					style={ "left: " + pct(tick.Pct) + "%" }
+					class={ "pointer-events-none absolute top-full -translate-x-1/2 pt-2 text-xs whitespace-nowrap text-muted", templ.KV("max-sm:hidden", i%2 == 1) }
+				>
+					{ tick.Label }
+				</span>
+			}
+			<div data-hover style="visibility: hidden" class="pointer-events-none absolute inset-0">
+				<div style="left: var(--x)" class="absolute top-0 bottom-0 w-px bg-line-strong"></div>
+				<div style="left: var(--x); top: var(--y)" class="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current ring-2 ring-canvas"></div>
+				<div data-tip class="absolute top-1 rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs whitespace-nowrap shadow-[var(--shadow)]">
+					<span data-tip-price class="block font-medium tabular-nums text-ink"></span>
+					<span data-tip-date class="block text-muted"></span>
+				</div>
+			</div>
+		</div>
+	</div>
+}

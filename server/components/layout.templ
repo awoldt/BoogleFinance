@@ -1,0 +1,54 @@
+package components
+
+// layout is the html document every page renders into
+templ layout(title, description string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title }</title>
+			<meta name="description" content={ description }/>
+			<link rel="icon" href="/static/favicon.ico"/>
+			<link rel="preconnect" href="https://fonts.googleapis.com"/>
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+			<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"/>
+			<link rel="stylesheet" href="/static/styles.css"/>
+			// runs before the first paint so a dark theme never flashes light
+			<script>
+				(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);}catch(e){}})();
+			</script>
+		</head>
+		<body>
+			{ children... }
+			<script>
+				document.querySelectorAll("[data-theme-toggle]").forEach(function (button) {
+					button.addEventListener("click", function () {
+						var next = !document.documentElement.classList.contains("dark");
+						document.documentElement.classList.toggle("dark", next);
+						try { localStorage.setItem("theme", next ? "dark" : "light"); } catch (e) {}
+					});
+				});
+			</script>
+		</body>
+	</html>
+}
+
+templ themeToggle() {
+	<button
+		type="button"
+		data-theme-toggle
+		aria-label="Toggle color scheme"
+		class="flex h-10 w-10 items-center justify-center rounded-full text-muted hover:bg-hover"
+	>
+		@sunIcon("hidden h-5 w-5 dark:block")
+		@moonIcon("h-5 w-5 dark:hidden")
+	</button>
+}
+
+// the grey ticker badge used in the watchlist and on the ticker page
+templ symbolBadge(symbol string) {
+	<span class="inline-flex h-7 w-14 shrink-0 items-center justify-center rounded-md bg-[#636366] text-[11px] font-bold tracking-wide text-white">
+		{ symbol }
+	</span>
+}

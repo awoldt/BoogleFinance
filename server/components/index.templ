@@ -1,0 +1,176 @@
+package components
+
+import (
+	"strconv"
+	"watchlist/models"
+)
+
+// Index is the home page. tickers is the user's watchlist, read from the
+// "watchlist" cookie by the route (comma separated symbols, url encoded) and
+// loaded in the order they were added. failed is true when some of the prices
+// couldn't be loaded.
+templ Index(tickers []models.Ticker, failed bool) {
+	@layout("Finance", "Search stocks, follow a watchlist, and scan the market.") {
+		<div class="min-h-screen bg-canvas">
+			<section class="relative z-10 bg-hero">
+				<div class="absolute inset-0 overflow-hidden">
+					@waveBackdrop()
+				</div>
+				<div class="relative mx-auto max-w-2xl px-4 py-10 sm:py-14">
+					@search()
+				</div>
+			</section>
+			<main class="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
+				<div>
+					<h1 class="text-xl font-normal text-ink">Your watchlist</h1>
+					// swapped for a freshly rendered copy whenever the watchlist changes
+					<div id="watchlist" class="transition-opacity">
+						if len(tickers) > 0 {
+							<ul class="mt-2">
+								for _, t := range tickers {
+									@watchlistRow(t)
+								}
+							</ul>
+						} else if !failed {
+							<p class="mt-4 text-sm text-muted">
+								Nothing here yet. Search for a stock above and tap + to watch it.
+							</p>
+						}
+						if failed {
+							<p class="mt-3 text-sm text-down">Couldn’t load prices. Try refreshing.</p>
+						}
+					</div>
+					<div class="mt-8">
+						<p class="text-[11px] font-medium tracking-[0.14em] text-muted">YOUR LISTS</p>
+						<div id="lists" class="mt-3 flex flex-wrap items-center gap-3">
+							<button
+								type="button"
+								class="inline-flex items-center gap-2 rounded-full border border-line-strong bg-card px-4 py-2 text-sm text-ink hover:bg-hover"
+							>
+								@listIcon("h-4 w-4 text-muted")
+								Watchlist
+								<span id="watchlist-count" class="tabular-nums text-muted">{ strconv.Itoa(len(tickers)) }</span>
+							</button>
+							<form id="new-list-form" hidden class="flex items-center gap-2">
+								<input
+									name="name"
+									placeholder="List name"
+									aria-label="List name"
+									autocomplete="off"
+									class="h-9 w-36 rounded-full border border-line-strong bg-card px-3 text-sm text-ink outline-none focus:border-link"
+								/>
+								<button type="submit" class="text-sm font-medium text-link">Add</button>
+							</form>
+							<button
+								id="new-list"
+								type="button"
+								class="inline-flex items-center gap-1 px-1 text-sm font-medium text-link"
+							>
+								@plusIcon("h-4 w-4")
+								New list
+							</button>
+						</div>
+					</div>
+				</div>
+				<div class="mt-6 flex justify-end">
+					@themeToggle()
+				</div>
+			</main>
+		</div>
+		// cloned by the script for each search result and each new list
+		<template id="search-row">
+			<li class="flex items-center gap-3 border-b border-line px-5 py-3 last:border-b-0 hover:bg-hover">
+				<span data-symbol class="inline-flex h-7 w-14 shrink-0 items-center justify-center rounded-md bg-link-bg text-[11px] font-bold tracking-wide text-link"></span>
+				<p data-name class="min-w-0 flex-1 truncate text-[15px] text-ink"></p>
+				<p data-exchange class="hidden shrink-0 text-sm text-muted sm:block"></p>
+				<button
+					type="button"
+					data-toggle
+					aria-pressed="false"
+					class="group flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong text-muted not-aria-pressed:hover:bg-hover aria-pressed:border-link aria-pressed:bg-link-bg aria-pressed:text-link"
+				>
+					@plusIcon("h-4 w-4 group-aria-pressed:hidden")
+					@checkIcon("hidden h-4 w-4 group-aria-pressed:block")
+				</button>
+			</li>
+		</template>
+		<template id="list-chip">
+			<span class="inline-flex items-center rounded-full border border-line-strong bg-card px-4 py-2 text-sm text-ink"></span>
+		</template>
+		<script src="/static/index.js"></script>
+	}
+}
+
+templ search() {
+	<div id="search" class="relative">
+		<label class="relative block">
+			<span class="sr-only">Search for stocks, ETFs and more</span>
+			@searchIcon("pointer-events-none absolute top-1/2 left-5 h-5 w-5 -translate-y-1/2 text-faint")
+			<input
+				id="search-input"
+				placeholder="Search for stocks, ETFs & more"
+				autocomplete="off"
+				aria-expanded="false"
+				aria-controls="search-dropdown"
+				class="h-14 w-full rounded-full border border-line-strong bg-search pr-5 pl-12 text-base text-ink shadow-[var(--shadow)] outline-none placeholder:text-faint focus:border-link"
+			/>
+		</label>
+		<div
+			id="search-dropdown"
+			hidden
+			class="absolute top-full right-0 left-0 z-20 mt-2 max-h-96 overflow-y-auto rounded-2xl border border-line-strong bg-card shadow-[var(--shadow)]"
+		>
+			<p id="search-message" class="px-5 py-6 text-sm text-muted"></p>
+			<ul id="search-results" class="transition-opacity"></ul>
+		</div>
+	</div>
+}
+
+templ watchlistRow(t models.Ticker) {
+	{{ change := float64(t.PriceDetails.Change) }}
+	<li class="relative flex items-center gap-3 border-b border-line py-3.5 last:border-b-0 hover:bg-hover">
+		@symbolBadge(t.Symbol)
+		// the link's ::after stretches over the whole row so any click opens the ticker page
+		<a
+			href={ tickerURL(t.Symbol) }
+			aria-label={ "Open " + t.Symbol }
+			class="min-w-0 flex-1 truncate text-[15px] text-ink after:absolute after:inset-0"
+		>
+			{ t.Name }
+		</a>
+		<p class="w-[5.5rem] shrink-0 text-right text-[15px] font-medium tabular-nums text-ink">
+			{ usd(float64(t.PriceDetails.Price)) }
+		</p>
+		<p class={ "hidden w-[4.75rem] shrink-0 text-right text-sm tabular-nums sm:block", directionClass(change) }>
+			{ signedUSD(change) }
+		</p>
+		<span class={ "inline-flex w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded-full px-2 py-1 text-sm font-medium tabular-nums", pillClass(change) }>
+			@arrowIcon(change)
+			{ percent(float64(t.PriceDetails.ChangePercentage)) }
+		</span>
+		<button
+			type="button"
+			data-remove={ t.Symbol }
+			aria-label={ "Remove " + t.Symbol + " from watchlist" }
+			class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-link bg-link-bg text-link"
+		>
+			@checkIcon("h-4 w-4")
+		</button>
+	</li>
+}
+
+templ waveBackdrop() {
+	<svg
+		class="pointer-events-none absolute inset-0 h-full w-full text-wave"
+		viewBox="0 0 1440 240"
+		preserveAspectRatio="none"
+		aria-hidden="true"
+	>
+		<path d="M-40 70c180 80 320-40 520-10s300 90 520 20 280-70 480-20" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.55"></path>
+		<path d="M-40 100c200 70 340-50 540 0s280 80 500 10 300-80 480-10" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.4"></path>
+		<path d="M-40 130c220 60 360-70 560 10s260 70 480-10 320-60 480 10" fill="none" stroke="currentColor" stroke-width="1" opacity="0.35"></path>
+		<path d="M-20 40c240 90 300-60 560-20s340 100 500 30 260-90 420-30" fill="none" stroke="currentColor" stroke-width="1.15" opacity="0.45"></path>
+		<path d="M-40 170c200 40 380-80 600 0s300 60 460-20 280-40 460 20" fill="none" stroke="currentColor" stroke-width="1" opacity="0.28"></path>
+		<path d="M200 20c160 70 220-30 380 10s200 60 340 0 220-50 360 10" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"></path>
+	</svg>
+}

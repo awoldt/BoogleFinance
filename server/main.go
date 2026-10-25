@@ -38,9 +38,19 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	r.Post("/api/ticker", routes.TickerRoute(FMP_API_KEY))
+	// static assets
+	static := http.FileServer(http.Dir("static"))
+	r.Handle("/static/*", http.StripPrefix("/static/", static))
+	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/favicon.ico")
+	})
+
+	// search api
 	r.Post("/api/search", routes.SearchTickerRoute(FMP_API_KEY))
-	r.Post("/api/loadwatchlist", routes.LoadWatchlistRoute(FMP_API_KEY))
+
+	// main pages
+	r.Get("/", routes.HomePage(FMP_API_KEY))
+	r.Get("/{ticker}", routes.TickerPage(FMP_API_KEY))
 
 	http.ListenAndServe(":"+port, r)
 }
