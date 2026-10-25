@@ -54,11 +54,11 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 					Change:           priceData.Change,
 					ChangePercentage: priceData.ChangePercentage,
 					LastUpdated:      priceData.Timestamp,
-					Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
+					Expires:          time.Now().Add(cache.PRICE_TTL).Unix(),
 				},
 				ChartDetails: models.ChartDetails{
 					Prices:  historicalChartData,
-					Expires: time.Now().Add(time.Hour * 24).Unix(), // 24 hours from time of save
+					Expires: time.Now().Add(cache.CHART_TTL).Unix(),
 				},
 			}
 

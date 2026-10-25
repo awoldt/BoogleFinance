@@ -54,7 +54,7 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 						Change:           priceData.Change,
 						ChangePercentage: priceData.ChangePercentage,
 						LastUpdated:      priceData.Timestamp,
-						Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
+						Expires:          time.Now().Add(cache.PRICE_TTL).Unix(),
 					},
 				}
 
