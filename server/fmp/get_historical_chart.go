@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"watchlist/models"
 )
 
-type ChartDataResult struct {
-	Date  string  `json:"date"`
-	Price float32 `json:"price"`
-}
-
-func GetChartData(ticker, apiKey string) ([]ChartDataResult, error) {
+func GetHistoricalChartData(ticker, apiKey string) ([]models.ChartDataResult, error) {
 
 	log.Printf("getting ticker chart data for %v", ticker)
 
@@ -25,16 +22,16 @@ func GetChartData(ticker, apiKey string) ([]ChartDataResult, error) {
 	res, err := HttpClient.Get(url)
 	if err != nil {
 		log.Printf("ERROR: failed while making request to FMP API: %v", err)
-		return []ChartDataResult{}, err
+		return []models.ChartDataResult{}, err
 	}
 
 	defer res.Body.Close()
 
-	var result []ChartDataResult
+	var result []models.ChartDataResult
 	err = json.UnmarshalRead(res.Body, &result)
 	if err != nil {
 		log.Printf("ERROR: failed reading response from FMP API: %v", err)
-		return []ChartDataResult{}, err
+		return []models.ChartDataResult{}, err
 	}
 
 	return result, nil

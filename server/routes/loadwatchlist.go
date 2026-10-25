@@ -6,6 +6,7 @@ import (
 	"time"
 	"watchlist/cache"
 	"watchlist/fmp"
+	"watchlist/models"
 )
 
 type LoadWatchlistRequest struct {
@@ -27,7 +28,7 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 
 		// loop through all the tickers for a users watchlist and
 		// check cache, if not get the price
-		var watchlistReturn []cache.Ticker
+		var watchlistReturn []models.Ticker
 		for _, v := range body.Tickers {
 			hit, cachedTicker, err := cache.PRICE_CACHE.GetTickerFromCache(v, apiKey, cache.PriceOnly)
 			if err != nil {
@@ -45,15 +46,15 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 				}
 
 				// dont set chart data and let be 0 value (saved payload size)
-				tickerData := cache.Ticker{
+				tickerData := models.Ticker{
 					Symbol: priceData.Symbol,
 					Name:   priceData.Name,
-					PriceDetails: cache.PriceDetails{
+					PriceDetails: models.PriceDetails{
 						Price:            priceData.Price,
 						Change:           priceData.Change,
 						ChangePercentage: priceData.ChangePercentage,
 						LastUpdated:      priceData.Timestamp,
-						Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
+						Expires:          time.Now().Add(cache.PRICE_TTL).Unix(),
 					},
 				}
 
@@ -62,7 +63,7 @@ func LoadWatchlistRoute(apiKey string) func(w http.ResponseWriter, r *http.Reque
 				watchlistReturn = append(watchlistReturn, tickerData)
 			} else {
 				// dont set chart data and let be 0 value (saved payload size)
-				cachedTicker.ChartDetails = cache.ChartDetails{}
+				cachedTicker.ChartDetails = models.ChartDetails{}
 
 				watchlistReturn = append(watchlistReturn, cachedTicker)
 			}

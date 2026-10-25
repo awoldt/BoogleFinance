@@ -8,6 +8,7 @@ import (
 	"time"
 	"watchlist/cache"
 	"watchlist/fmp"
+	"watchlist/models"
 )
 
 func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
@@ -39,25 +40,25 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			chartData, err := fmp.GetChartData(ticker, apiKey)
+			historicalChartData, err := fmp.GetHistoricalChartData(ticker, apiKey)
 			if err != nil {
 				// dont throw error on getting chart data
 				log.Printf("error while getting chart data on new ticker fetch %v", err)
 			}
 
-			tickerData := cache.Ticker{
+			tickerData := models.Ticker{
 				Symbol: priceData.Symbol,
 				Name:   priceData.Name,
-				PriceDetails: cache.PriceDetails{
+				PriceDetails: models.PriceDetails{
 					Price:            priceData.Price,
 					Change:           priceData.Change,
 					ChangePercentage: priceData.ChangePercentage,
 					LastUpdated:      priceData.Timestamp,
-					Expires:          time.Now().Add(time.Minute * 1).Unix(), // 1 min from time of save
+					Expires:          time.Now().Add(cache.PRICE_TTL).Unix(),
 				},
-				ChartDetails: cache.ChartDetails{
-					Prices:  chartData,
-					Expires: time.Now().Add(time.Hour * 24).Unix(), // 24 hours from time of save
+				ChartDetails: models.ChartDetails{
+					Prices:  historicalChartData,
+					Expires: time.Now().Add(cache.CHART_TTL).Unix(),
 				},
 			}
 

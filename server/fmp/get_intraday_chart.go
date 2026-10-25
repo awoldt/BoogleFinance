@@ -1,5 +1,5 @@
 /*
-	this is different than get_chart.go as this chart data is
+	this is different than get_historical_chart.go as this chart data is
 	specifically for the current trading day and not a historical
 
 	it will return the price of a ticker for every single minute during
@@ -13,14 +13,10 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"watchlist/models"
 )
 
-type TodayChart struct {
-	Date  string  `json:"date"`
-	Price float32 `json:"open"`
-}
-
-func GetTodaysChart(ticker, apiKey string) ([]TodayChart, error) {
+func GetIntradayChartData(ticker, apiKey string) ([]models.TodayChart, error) {
 	log.Printf("getting todays chart data for %v", ticker)
 
 	today := time.Now()
@@ -40,16 +36,16 @@ func GetTodaysChart(ticker, apiKey string) ([]TodayChart, error) {
 	res, err := HttpClient.Get(url)
 	if err != nil {
 		log.Printf("ERROR: failed while making request to FMP API: %v", err)
-		return []TodayChart{}, err
+		return []models.TodayChart{}, err
 	}
 
 	defer res.Body.Close()
 
-	var result []TodayChart
+	var result []models.TodayChart
 	err = json.UnmarshalRead(res.Body, &result)
 	if err != nil {
 		log.Printf("ERROR: failed reading response from FMP API: %v", err)
-		return []TodayChart{}, err
+		return []models.TodayChart{}, err
 	}
 
 	return result, nil

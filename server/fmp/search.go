@@ -6,15 +6,10 @@ import (
 	"log"
 	"slices"
 	"strings"
+	"watchlist/models"
 )
 
-type SearchTickerResult struct {
-	Symbol   string `json:"symbol"`
-	Name     string `json:"name"`
-	Exchange string `json:"exchange"`
-}
-
-func SearchTicker(ticker, apiKey string) ([]SearchTickerResult, error) {
+func SearchTicker(ticker, apiKey string) ([]models.SearchTickerResult, error) {
 	// we will perform 2 different searches for this function to fmp:
 	// 1. company search (Amazon)
 	// 2. symbol search (AMZN)
@@ -26,41 +21,41 @@ func SearchTicker(ticker, apiKey string) ([]SearchTickerResult, error) {
 	companySearchReq, err := HttpClient.Get(companySearchUrl)
 	if err != nil {
 		log.Printf("ERROR: could not company search for %v", ticker)
-		return []SearchTickerResult{}, err
+		return []models.SearchTickerResult{}, err
 	}
 	defer companySearchReq.Body.Close()
 
 	symbolSearchReq, err := HttpClient.Get(symbolSearchUrl)
 	if err != nil {
 		log.Printf("ERROR: could not symbol search for %v", ticker)
-		return []SearchTickerResult{}, err
+		return []models.SearchTickerResult{}, err
 	}
 	defer symbolSearchReq.Body.Close()
 
 	var invalidSymbolCharacter = "." // we dont want any "AMZN.NE or AMZN.TO.. just basic AMZN"
 
-	var companySearchResults []SearchTickerResult
+	var companySearchResults []models.SearchTickerResult
 	err = json.UnmarshalRead(companySearchReq.Body, &companySearchResults)
 	if err != nil {
 		log.Printf("ERROR: failed reading response from FMP API: %v", err)
-		return []SearchTickerResult{}, err
+		return []models.SearchTickerResult{}, err
 	}
 
-	var symbolSearchResults []SearchTickerResult
+	var symbolSearchResults []models.SearchTickerResult
 	err = json.UnmarshalRead(symbolSearchReq.Body, &symbolSearchResults)
 	if err != nil {
 		log.Printf("ERROR: failed reading response from FMP API: %v", err)
-		return []SearchTickerResult{}, err
+		return []models.SearchTickerResult{}, err
 	}
 
 	// loop through and add each unique result
-	var finalResults []SearchTickerResult
+	var finalResults []models.SearchTickerResult
 	for _, v := range companySearchResults {
 		if strings.Contains(v.Symbol, invalidSymbolCharacter) {
 			continue
 		}
 
-		exists := slices.ContainsFunc(finalResults, func(x SearchTickerResult) bool {
+		exists := slices.ContainsFunc(finalResults, func(x models.SearchTickerResult) bool {
 			if x.Symbol == v.Symbol {
 				return true
 			}
@@ -76,7 +71,7 @@ func SearchTicker(ticker, apiKey string) ([]SearchTickerResult, error) {
 			continue
 		}
 
-		exists := slices.ContainsFunc(finalResults, func(x SearchTickerResult) bool {
+		exists := slices.ContainsFunc(finalResults, func(x models.SearchTickerResult) bool {
 			if x.Symbol == v.Symbol {
 				return true
 			}
