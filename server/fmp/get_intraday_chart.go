@@ -1,5 +1,5 @@
 /*
-	this is different than get_chart.go as this chart data is
+	this is different than get_historical_chart.go as this chart data is
 	specifically for the current trading day and not a historical
 
 	it will return the price of a ticker for every single minute during
