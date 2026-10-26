@@ -47,8 +47,8 @@ func (cache *Cache) SaveTickerToCache(ticker models.Ticker) {
 			Expires:          ticker.PriceDetails.Expires,
 		},
 		ChartDetails: models.ChartDetails{
-			Prices:  ticker.ChartDetails.Prices,
-			Expires: ticker.ChartDetails.Expires,
+			HistoricalChart: models.HistoricalChart{Prices: ticker.ChartDetails.HistoricalChart.Prices,
+				Expires: ticker.ChartDetails.HistoricalChart.Expires},
 		},
 	}
 
@@ -98,15 +98,15 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 	case ChartOnly:
 		{
 			// chart is expired
-			if now >= cachedTicker.ChartDetails.Expires {
+			if now >= cachedTicker.ChartDetails.HistoricalChart.Expires {
 				refreshedChart, err := fmp.GetHistoricalChartData(ticker, apiKey)
 				if err != nil {
 					return true, models.Ticker{}, err
 				}
 
 				cachedTicker.ChartDetails = models.ChartDetails{
-					Prices:  refreshedChart,
-					Expires: time.Now().Add(CHART_TTL).Unix(),
+					HistoricalChart: models.HistoricalChart{Prices: refreshedChart,
+						Expires: time.Now().Add(CHART_TTL).Unix()},
 				}
 
 				cache.SaveTickerToCache(cachedTicker)
@@ -136,7 +136,7 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 			}
 
 			// chart is expired
-			if now >= cachedTicker.ChartDetails.Expires {
+			if now >= cachedTicker.ChartDetails.HistoricalChart.Expires {
 				saveCache = true
 				refreshedChart, err := fmp.GetHistoricalChartData(ticker, apiKey)
 				if err != nil {
@@ -144,8 +144,8 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 				}
 
 				cachedTicker.ChartDetails = models.ChartDetails{
-					Prices:  refreshedChart,
-					Expires: time.Now().Add(CHART_TTL).Unix(),
+					HistoricalChart: models.HistoricalChart{Prices: refreshedChart,
+						Expires: time.Now().Add(CHART_TTL).Unix()},
 				}
 
 			}

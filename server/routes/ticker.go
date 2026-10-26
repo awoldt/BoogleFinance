@@ -57,8 +57,10 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 					Expires:          time.Now().Add(cache.PRICE_TTL).Unix(),
 				},
 				ChartDetails: models.ChartDetails{
-					Prices:  historicalChartData,
-					Expires: time.Now().Add(cache.CHART_TTL).Unix(),
+					HistoricalChart: models.HistoricalChart{
+						Prices:  historicalChartData,
+						Expires: time.Now().Add(cache.CHART_TTL).Unix(),
+					},
 				},
 			}
 

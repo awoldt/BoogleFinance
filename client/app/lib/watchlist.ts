@@ -42,8 +42,12 @@ export type ChartPoint = {
 
 // Up to a year of daily closes, newest first (the server-side cache field
 // `expires` is ignored). The server sends `null` when it couldn't get them.
-export type ChartDetails = {
+export type HistoricalChart = {
   prices: ChartPoint[] | null;
+};
+
+export type ChartDetails = {
+  historicalChart: HistoricalChart;
 };
 
 // One entry of the /api/loadwatchlist response, and the /api/ticker response.

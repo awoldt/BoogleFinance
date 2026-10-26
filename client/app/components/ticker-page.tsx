@@ -92,7 +92,7 @@ export function TickerPage({ symbol }: { symbol: string }) {
 function QuoteView({ quote }: { quote: Quote }) {
   const { price, change, changePercentage, timestamp } = quote.priceDetails;
   const direction: Direction = change < 0 ? "down" : "up";
-  const prices = quote.chartDetails?.prices ?? EMPTY_PRICES;
+  const prices = quote.chartDetails?.historicalChart?.prices ?? EMPTY_PRICES;
 
   return (
     <section className="mt-6">
