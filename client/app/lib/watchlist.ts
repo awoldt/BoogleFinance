@@ -46,8 +46,23 @@ export type HistoricalChart = {
   prices: ChartPoint[] | null;
 };
 
+// One 5 minute price of the current trading day, e.g.
+// {date: "2026-10-29 09:35:00", open: 314.14}. The date is New York time.
+export type IntradayPoint = {
+  date: string; // YYYY-MM-DD HH:MM:SS
+  open: number;
+};
+
+// Every 5 minutes of the latest trading day, newest first (the server-side
+// cache field `expires` is ignored). The server sends `null` when it couldn't
+// get them.
+export type IntradayChart = {
+  prices: IntradayPoint[] | null;
+};
+
 export type ChartDetails = {
   historicalChart: HistoricalChart;
+  intradayChart?: IntradayChart;
 };
 
 // One entry of the /api/loadwatchlist response, and the /api/ticker response.

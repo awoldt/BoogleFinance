@@ -6,10 +6,11 @@ import { PriceChart } from "~/components/price-chart";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { directionClass, pillClass, usd } from "~/lib/format";
 import { fetchTicker, TickerNotFoundError } from "~/lib/ticker";
-import type { ChartPoint, Quote } from "~/lib/watchlist";
+import type { ChartPoint, IntradayPoint, Quote } from "~/lib/watchlist";
 
-// stable reference so the chart isn't rebuilt on every render without data
+// stable references so the chart isn't rebuilt on every render without data
 const EMPTY_PRICES: ChartPoint[] = [];
+const EMPTY_INTRADAY: IntradayPoint[] = [];
 
 const updatedFormat = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -93,6 +94,7 @@ function QuoteView({ quote }: { quote: Quote }) {
   const { price, change, changePercentage, timestamp } = quote.priceDetails;
   const direction: Direction = change < 0 ? "down" : "up";
   const prices = quote.chartDetails?.historicalChart?.prices ?? EMPTY_PRICES;
+  const intraday = quote.chartDetails?.intradayChart?.prices ?? EMPTY_INTRADAY;
 
   return (
     <section className="mt-6">
@@ -127,7 +129,13 @@ function QuoteView({ quote }: { quote: Quote }) {
         </p>
       )}
 
-      <PriceChart symbol={quote.symbol} price={price} prices={prices} />
+      <PriceChart
+        symbol={quote.symbol}
+        price={price}
+        change={change}
+        prices={prices}
+        intraday={intraday}
+      />
     </section>
   );
 }

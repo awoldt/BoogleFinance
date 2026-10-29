@@ -10,13 +10,14 @@ type HistoricalChart struct {
 	Expires int64             `json:"expires"`
 }
 
+type IntradayChart struct {
+	Prices  []TodayChart `json:"prices"`
+	Expires int64        `json:"expires"`
+}
+
 type ChartDetails struct {
 	HistoricalChart HistoricalChart `json:"historicalChart"`
-
-	// IntradayChart struct {
-	// 	Prices  []TodayChart `json:"prices"`
-	// 	Expires int64        `json:"expires"`
-	// } `json:"intradayChart"`
+	IntradayChart   IntradayChart   `json:"intradayChart"`
 }
 
 type TodayChart struct {

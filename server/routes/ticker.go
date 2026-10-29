@@ -43,7 +43,13 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 			historicalChartData, err := fmp.GetHistoricalChartData(ticker, apiKey)
 			if err != nil {
 				// dont throw error on getting chart data
-				log.Printf("error while getting chart data on new ticker fetch %v", err)
+				log.Printf("error while getting historical chart data on new ticker fetch %v", err)
+			}
+
+			intradayChartData, err := fmp.GetIntradayChartData(ticker, apiKey)
+			if err != nil {
+				// dont throw error on getting chart data
+				log.Printf("error while getting intraday chart data on new ticker fetch %v", err)
 			}
 
 			tickerData := models.Ticker{
@@ -59,7 +65,11 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 				ChartDetails: models.ChartDetails{
 					HistoricalChart: models.HistoricalChart{
 						Prices:  historicalChartData,
-						Expires: time.Now().Add(cache.CHART_TTL).Unix(),
+						Expires: time.Now().Add(cache.HISTORICAL_CHART_TTL).Unix(),
+					},
+					IntradayChart: models.IntradayChart{
+						Prices:  intradayChartData,
+						Expires: time.Now().Add(cache.INTRADAY_CHART_TTL).Unix(),
 					},
 				},
 			}

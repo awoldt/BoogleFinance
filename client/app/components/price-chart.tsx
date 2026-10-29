@@ -3,27 +3,33 @@ import { buildChart, RANGES, type Chart, type RangeKey } from "~/lib/chart-data"
 import { ArrowIcon } from "~/components/icons";
 import type { Direction } from "~/data/markets";
 import { directionClass, pillClass, usd } from "~/lib/format";
-import type { ChartPoint } from "~/lib/watchlist";
+import type { ChartPoint, IntradayPoint } from "~/lib/watchlist";
 
 type Props = {
   symbol: string;
-  price: number; // latest price, what each range is measured against
+  price: number; // latest price, the end of what each range is measured against
+  change: number; // today's change, which puts the previous close at price - change
   prices: ChartPoint[];
+  intraday: IntradayPoint[];
 };
 
 const RANGE_LABELS: Record<RangeKey, string> = {
+  "1D": "today",
   "5D": "past 5 days",
   "1M": "past month",
   "6M": "past 6 months",
   "1Y": "past year",
 };
 
-export function PriceChart({ symbol, price, prices }: Props) {
-  const [range, setRange] = useState<RangeKey>("1M");
+export function PriceChart({ symbol, price, change, prices, intraday }: Props) {
+  const [range, setRange] = useState<RangeKey>("1D");
   // every range is a slice of the prices already in the browser
-  const chart = useMemo(() => buildChart(prices, range), [prices, range]);
+  const chart = useMemo(
+    () => buildChart(range, { daily: prices, intraday, previousClose: price - change }),
+    [prices, intraday, price, change, range],
+  );
 
-  if (!chart) {
+  if (prices.length < 2 && intraday.length < 2) {
     return <p className="mt-6 text-sm text-muted">Chart data isn’t available.</p>;
   }
 
@@ -53,18 +59,32 @@ export function PriceChart({ symbol, price, prices }: Props) {
           ))}
         </div>
 
-        <RangeChange from={chart.values[0]} to={price} label={RANGE_LABELS[range]} />
+        {chart && (
+          <RangeChange from={chart.baseline} to={price} label={RANGE_LABELS[range]} />
+        )}
       </div>
 
-      {/* keyed so a new range starts with the hover state cleared */}
-      <ChartPlot key={range} symbol={symbol} chart={chart} />
+      {chart ? (
+        <>
+          {/* keyed so a new range starts with the hover state cleared */}
+          <ChartPlot key={range} symbol={symbol} chart={chart} />
 
-      <p className="text-xs text-faint">Daily closing prices.</p>
+          {range !== "1D" && (
+            <p className="text-xs text-faint">Daily closing prices.</p>
+          )}
+        </>
+      ) : (
+        <p className="mt-6 text-sm text-muted">
+          {range === "1D"
+            ? "No trading data for today yet."
+            : "Chart data isn’t available."}
+        </p>
+      )}
     </div>
   );
 }
 
-/** How far the price moved from the first close of the range to the latest price. */
+/** How far the price moved from the start of the range to the latest price. */
 function RangeChange({ from, to, label }: { from: number; to: number; label: string }) {
   if (!(from > 0)) return null;
 
@@ -112,7 +132,7 @@ function ChartPlot({ symbol, chart }: { symbol: string; chart: Chart }) {
     }
     active.current = index;
     const width = plot.clientWidth;
-    const x = (index / last) * width;
+    const x = chart.xs[index] * width;
 
     hover.style.setProperty("--x", `${x}px`);
     hover.style.setProperty("--y", `${chart.ys[index]}%`);
@@ -130,7 +150,9 @@ function ChartPlot({ symbol, chart }: { symbol: string; chart: Chart }) {
   function onPointer(event: React.PointerEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     const fraction = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
-    show(Math.round(fraction * last));
+    const index = chart.indexAt(fraction);
+    if (index < 0) hide();
+    else show(index);
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {

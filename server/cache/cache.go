@@ -23,7 +23,8 @@ var PriceOnly GetCacheOptions = "price"
 var PriceAndChart GetCacheOptions = "both"
 
 const PRICE_TTL = time.Minute
-const CHART_TTL = time.Hour * 24
+const HISTORICAL_CHART_TTL = time.Hour * 24
+const INTRADAY_CHART_TTL = time.Minute * 5
 
 // THIS IS THE SINGLE CACHE STRUCT THE SERVER WILL READ/WRITE FROM
 var PRICE_CACHE Cache = Cache{
@@ -116,7 +117,7 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 				}
 			}
 
-			// chart is expired
+			// historical chart is expired
 			if now >= cachedTicker.ChartDetails.HistoricalChart.Expires {
 				saveCache = true
 				refreshedChart, err := fmp.GetHistoricalChartData(ticker, apiKey)
@@ -124,11 +125,23 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 					return true, models.Ticker{}, err
 				}
 
-				cachedTicker.ChartDetails = models.ChartDetails{
-					HistoricalChart: models.HistoricalChart{Prices: refreshedChart,
-						Expires: time.Now().Add(CHART_TTL).Unix()},
+				cachedTicker.ChartDetails.HistoricalChart = models.HistoricalChart{Prices: refreshedChart,
+					Expires: time.Now().Add(HISTORICAL_CHART_TTL).Unix()}
+
+			}
+
+			// intraday chart is expired
+			if now >= cachedTicker.ChartDetails.IntradayChart.Expires {
+				saveCache = true
+				refreshedChart, err := fmp.GetIntradayChartData(ticker, apiKey)
+				if err != nil {
+					return true, models.Ticker{}, err
 				}
 
+				cachedTicker.ChartDetails.IntradayChart = models.IntradayChart{
+					Prices:  refreshedChart,
+					Expires: time.Now().Add(INTRADAY_CHART_TTL).Unix(),
+				}
 			}
 
 			if saveCache {
