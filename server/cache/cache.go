@@ -20,7 +20,6 @@ type Cache struct {
 type GetCacheOptions string
 
 var PriceOnly GetCacheOptions = "price"
-var ChartOnly GetCacheOptions = "chart"
 var PriceAndChart GetCacheOptions = "both"
 
 const PRICE_TTL = time.Minute
@@ -95,25 +94,7 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 
 			return true, cachedTicker, nil
 		}
-	case ChartOnly:
-		{
-			// chart is expired
-			if now >= cachedTicker.ChartDetails.HistoricalChart.Expires {
-				refreshedChart, err := fmp.GetHistoricalChartData(ticker, apiKey)
-				if err != nil {
-					return true, models.Ticker{}, err
-				}
 
-				cachedTicker.ChartDetails = models.ChartDetails{
-					HistoricalChart: models.HistoricalChart{Prices: refreshedChart,
-						Expires: time.Now().Add(CHART_TTL).Unix()},
-				}
-
-				cache.SaveTickerToCache(cachedTicker)
-			}
-
-			return true, cachedTicker, nil
-		}
 	case PriceAndChart:
 		{
 			var saveCache bool // no need to save to cache if neither chart or price is expired
