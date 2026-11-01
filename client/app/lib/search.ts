@@ -4,19 +4,16 @@ export type SearchResult = {
   exchange: string;
 };
 
-// Origin of the Go server, e.g. https://my-server.up.railway.app (no /api).
-// Empty in dev so requests go through the vite proxy. Trailing slashes are
-// stripped so a copy/pasted "https://host/" doesn't produce "//api/...".
-export const API_ORIGIN =(import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
-
+/**
+ * GET /api/search?q=AAPL
+ * The app's own resource route (routes/api.search.ts), which asks the Go
+ * server, so the browser never calls the Go server itself.
+ */
 export async function searchTickers(
   query: string,
   signal?: AbortSignal,
 ): Promise<SearchResult[]> {
-  const res = await fetch(
-    `${API_ORIGIN}/api/search?ticker=${encodeURIComponent(query)}`,
-    { method: "POST", signal },
-  );
+  const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal });
   if (!res.ok) throw new Error(`search failed (${res.status})`);
 
   const data: SearchResult[] | null = await res.json();

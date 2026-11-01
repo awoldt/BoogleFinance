@@ -7,10 +7,4 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  server: {
-    proxy: {
-      // /api/search?ticker=AAPL -> http://localhost:8080/api/search?ticker=AAPL
-      "/api": "http://localhost:8080",
-    },
-  },
 });

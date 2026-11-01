@@ -1,60 +1,40 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link } from "react-router";
 import type { Direction } from "~/data/markets";
 import { useSavedTickers } from "~/hooks/use-saved-tickers";
-import { ArrowIcon, BackIcon, SpinnerIcon } from "~/components/icons";
+import { ArrowIcon, BackIcon } from "~/components/icons";
 import { TickerSearch } from "~/components/ticker-search";
 import { PriceChart } from "~/components/price-chart";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { directionClass, pillClass, usd } from "~/lib/format";
-import { fetchTicker, TickerNotFoundError } from "~/lib/ticker";
 import type { ChartPoint, IntradayPoint, Quote } from "~/lib/watchlist";
 
 // stable references so the chart isn't rebuilt on every render without data
 const EMPTY_PRICES: ChartPoint[] = [];
 const EMPTY_INTRADAY: IntradayPoint[] = [];
 
+// New York time, the market's own clock. It also renders the same on the
+// server as in the browser, whatever time zone each is in.
 const updatedFormat = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
   hour: "numeric",
   minute: "2-digit",
+  timeZone: "America/New_York",
   timeZoneName: "short",
 });
 
-// The home screen passes the quote it already has through router state so the
-// page can paint right away; the fetch below then refreshes it.
-function readSeed(state: unknown, symbol: string): Quote | null {
-  const quote = (state as { quote?: Quote } | null)?.quote;
-  if (
-    quote &&
-    typeof quote.priceDetails?.price === "number" &&
-    quote.symbol?.toUpperCase() === symbol
-  ) {
-    return quote;
-  }
-  return null;
-}
-
-export function TickerPage({ symbol }: { symbol: string }) {
-  const location = useLocation();
-  const [quote, setQuote] = useState<Quote | null>(() =>
-    readSeed(location.state, symbol),
-  );
-  const [saved, toggleSaved] = useSavedTickers();
-  const [problem, setProblem] = useState<"notfound" | "failed" | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setProblem(null);
-    fetchTicker(symbol, controller.signal)
-      .then(setQuote)
-      .catch((error) => {
-        if (controller.signal.aborted) return;
-        setProblem(error instanceof TickerNotFoundError ? "notfound" : "failed");
-      });
-    return () => controller.abort();
-  }, [symbol]);
+// The quote comes from the ticker loader, fetched on the server before the
+// page renders.
+export function TickerPage({
+  symbol,
+  quote,
+  problem,
+}: {
+  symbol: string;
+  quote: Quote | null;
+  problem: "notfound" | "failed" | null;
+}) {
+  const { saved, toggle: toggleSaved } = useSavedTickers();
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -74,20 +54,12 @@ export function TickerPage({ symbol }: { symbol: string }) {
 
         {quote ? (
           <QuoteView quote={quote} />
-        ) : problem ? (
+        ) : (
           <p className="mt-6 text-sm text-down">
             {problem === "notfound"
               ? `We couldn’t find a ticker called ${symbol}.`
               : `Couldn’t load ${symbol}. Try refreshing.`}
           </p>
-        ) : (
-          <div
-            role="status"
-            className="mt-6 flex items-center gap-2 text-sm text-muted"
-          >
-            <SpinnerIcon className="h-5 w-5 text-link" />
-            Loading {symbol}…
-          </div>
         )}
 
         <div className="mt-6 flex justify-end">

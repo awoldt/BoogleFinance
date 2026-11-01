@@ -5,10 +5,19 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { useMoveLegacyWatchlist } from "~/hooks/use-saved-tickers";
+import { readSavedTickers } from "~/lib/watchlist.server";
 import "./app.css";
+
+// the watchlist is needed on every page (the search box marks saved tickers),
+// so it's read once here; useSavedTickers picks it up
+export async function loader({ request }: Route.LoaderArgs) {
+  return { saved: await readSavedTickers(request) };
+}
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -45,7 +54,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  useMoveLegacyWatchlist();
+  // pages now wait for their data on the server, so show that a click landed
+  const navigating = useNavigation().state === "loading";
+
+  return (
+    <>
+      {navigating && (
+        <div
+          role="progressbar"
+          aria-label="Loading"
+          className="fixed inset-x-0 top-0 z-50 h-0.5 animate-pulse bg-link"
+        />
+      )}
+      <Outlet />
+    </>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

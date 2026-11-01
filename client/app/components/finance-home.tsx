@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { Direction } from "~/data/markets";
 import { useSavedTickers } from "~/hooks/use-saved-tickers";
 import { directionClass, pillClass, usd } from "~/lib/format";
-import { loadWatchlist, type Quote } from "~/lib/watchlist";
+import type { Quote } from "~/lib/watchlist";
 import { ArrowIcon, CheckIcon, SpinnerIcon } from "~/components/icons";
 import { TickerSearch } from "~/components/ticker-search";
 import { ThemeToggle } from "~/components/theme-toggle";
@@ -26,36 +25,17 @@ function WaveBackdrop() {
   );
 }
 
-export function FinanceHome() {
-  const [saved, toggleSaved] = useSavedTickers();
-  const [quotes, setQuotes] = useState<Record<string, Quote>>({});
-  const [loading, setLoading] = useState(saved.length > 0);
-  const [failed, setFailed] = useState(false);
-
-  // load quotes on app load and again whenever the watchlist changes. Nothing
-  // saved means nothing to load, so skip the request and the spinner.
-  useEffect(() => {
-    if (saved.length === 0) {
-      setLoading(false);
-      setFailed(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    setLoading(true);
-    setFailed(false);
-    loadWatchlist(saved, controller.signal)
-      .then((list) => {
-        setQuotes(Object.fromEntries(list.map((quote) => [quote.symbol, quote])));
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setFailed(true);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, [saved]);
+// The quotes come from the home loader, which runs on the server on page load
+// and again after every watchlist change. Until it catches up, saved tickers
+// without a quote show a spinner.
+export function FinanceHome({
+  quotes,
+  failed,
+}: {
+  quotes: Record<string, Quote>;
+  failed: boolean;
+}) {
+  const { saved, pending, toggle: toggleSaved } = useSavedTickers();
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -76,7 +56,7 @@ export function FinanceHome() {
             <p className="mt-4 text-sm text-muted">
               Nothing here yet. Search for a stock above and tap + to watch it.
             </p>
-          ) : loading && saved.every((symbol) => !quotes[symbol]) ? (
+          ) : pending && saved.every((symbol) => !quotes[symbol]) ? (
             <div
               role="status"
               className="mt-4 flex items-center gap-2 text-sm text-muted"
@@ -91,14 +71,14 @@ export function FinanceHome() {
                   key={symbol}
                   symbol={symbol}
                   quote={quotes[symbol]}
-                  pending={loading}
+                  pending={pending}
                   onRemove={() => toggleSaved(symbol)}
                 />
               ))}
             </ul>
           )}
 
-          {failed && (
+          {failed && !pending && (
             <p className="mt-3 text-sm text-down">
               Couldn’t load prices. Try refreshing.
             </p>
@@ -135,7 +115,6 @@ function WatchlistRow({
       {/* the link's ::after stretches over the whole row so any click opens the ticker page */}
       <Link
         to={`/${encodeURIComponent(symbol)}`}
-        state={{ quote }}
         aria-label={`Open ${symbol}`}
         className="min-w-0 flex-1 truncate text-[15px] text-ink after:absolute after:inset-0"
       >
