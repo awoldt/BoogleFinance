@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import type { Direction } from "~/data/markets";
+import { useSavedTickers } from "~/hooks/use-saved-tickers";
 import { ArrowIcon, BackIcon, SpinnerIcon } from "~/components/icons";
+import { TickerSearch } from "~/components/ticker-search";
 import { PriceChart } from "~/components/price-chart";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { directionClass, pillClass, usd } from "~/lib/format";
@@ -39,6 +41,7 @@ export function TickerPage({ symbol }: { symbol: string }) {
   const [quote, setQuote] = useState<Quote | null>(() =>
     readSeed(location.state, symbol),
   );
+  const [saved, toggleSaved] = useSavedTickers();
   const [problem, setProblem] = useState<"notfound" | "failed" | null>(null);
 
   useEffect(() => {
@@ -56,13 +59,18 @@ export function TickerPage({ symbol }: { symbol: string }) {
   return (
     <div className="min-h-screen bg-canvas">
       <main className="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
-        <Link
-          to="/"
-          className="-ml-2 inline-flex items-center gap-1 rounded-full py-1 pr-3 pl-1 text-sm font-medium text-link hover:bg-hover"
-        >
-          <BackIcon className="h-5 w-5" />
-          Watchlist
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <Link
+            to="/"
+            className="-ml-2 inline-flex items-center gap-1 rounded-full py-1 pr-3 pl-1 text-sm font-medium text-link hover:bg-hover"
+          >
+            <BackIcon className="h-5 w-5" />
+            Watchlist
+          </Link>
+          <div className="relative z-20 w-full sm:w-96">
+            <TickerSearch compact saved={saved} onToggle={toggleSaved} />
+          </div>
+        </div>
 
         {quote ? (
           <QuoteView quote={quote} />

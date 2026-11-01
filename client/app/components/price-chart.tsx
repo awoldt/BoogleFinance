@@ -1,5 +1,10 @@
 import { useMemo, useRef, useState } from "react";
-import { buildChart, RANGES, type Chart, type RangeKey } from "~/lib/chart-data";
+import {
+  buildChart,
+  RANGES,
+  type Chart,
+  type RangeKey,
+} from "~/lib/chart-data";
 import { ArrowIcon } from "~/components/icons";
 import type { Direction } from "~/data/markets";
 import { directionClass, pillClass, usd } from "~/lib/format";
@@ -25,12 +30,19 @@ export function PriceChart({ symbol, price, change, prices, intraday }: Props) {
   const [range, setRange] = useState<RangeKey>("1D");
   // every range is a slice of the prices already in the browser
   const chart = useMemo(
-    () => buildChart(range, { daily: prices, intraday, previousClose: price - change }),
+    () =>
+      buildChart(range, {
+        daily: prices,
+        intraday,
+        previousClose: price - change,
+      }),
     [prices, intraday, price, change, range],
   );
 
   if (prices.length < 2 && intraday.length < 2) {
-    return <p className="mt-6 text-sm text-muted">Chart data isn’t available.</p>;
+    return (
+      <p className="mt-6 text-sm text-muted">Chart data isn’t available.</p>
+    );
   }
 
   return (
@@ -60,7 +72,11 @@ export function PriceChart({ symbol, price, change, prices, intraday }: Props) {
         </div>
 
         {chart && (
-          <RangeChange from={chart.baseline} to={price} label={RANGE_LABELS[range]} />
+          <RangeChange
+            from={chart.baseline}
+            to={price}
+            label={RANGE_LABELS[range]}
+          />
         )}
       </div>
 
@@ -68,10 +84,6 @@ export function PriceChart({ symbol, price, change, prices, intraday }: Props) {
         <>
           {/* keyed so a new range starts with the hover state cleared */}
           <ChartPlot key={range} symbol={symbol} chart={chart} />
-
-          {range !== "1D" && (
-            <p className="text-xs text-faint">Daily closing prices.</p>
-          )}
         </>
       ) : (
         <p className="mt-6 text-sm text-muted">
@@ -85,7 +97,15 @@ export function PriceChart({ symbol, price, change, prices, intraday }: Props) {
 }
 
 /** How far the price moved from the start of the range to the latest price. */
-function RangeChange({ from, to, label }: { from: number; to: number; label: string }) {
+function RangeChange({
+  from,
+  to,
+  label,
+}: {
+  from: number;
+  to: number;
+  label: string;
+}) {
   if (!(from > 0)) return null;
 
   const change = to - from;
@@ -127,7 +147,13 @@ function ChartPlot({ symbol, chart }: { symbol: string; chart: Chart }) {
     const plot = plotRef.current;
     const hover = hoverRef.current;
     const tip = tipRef.current;
-    if (!plot || !hover || !tip || !tipPriceRef.current || !tipDateRef.current) {
+    if (
+      !plot ||
+      !hover ||
+      !tip ||
+      !tipPriceRef.current ||
+      !tipDateRef.current
+    ) {
       return;
     }
     active.current = index;
@@ -149,7 +175,10 @@ function ChartPlot({ symbol, chart }: { symbol: string; chart: Chart }) {
 
   function onPointer(event: React.PointerEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
-    const fraction = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+    const fraction = Math.min(
+      Math.max((event.clientX - rect.left) / rect.width, 0),
+      1,
+    );
     const index = chart.indexAt(fraction);
     if (index < 0) hide();
     else show(index);
@@ -266,7 +295,10 @@ function ChartPlot({ symbol, chart }: { symbol: string; chart: Chart }) {
             ref={tipRef}
             className="absolute top-1 rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs whitespace-nowrap shadow-[var(--shadow)]"
           >
-            <span ref={tipPriceRef} className="block font-medium tabular-nums text-ink" />
+            <span
+              ref={tipPriceRef}
+              className="block font-medium tabular-nums text-ink"
+            />
             <span ref={tipDateRef} className="block text-muted" />
           </div>
         </div>

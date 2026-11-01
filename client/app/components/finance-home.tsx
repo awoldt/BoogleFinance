@@ -1,23 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { Direction } from "~/data/markets";
-import { useTickerSearch } from "~/hooks/use-ticker-search";
+import { useSavedTickers } from "~/hooks/use-saved-tickers";
 import { directionClass, pillClass, usd } from "~/lib/format";
-import type { SearchResult } from "~/lib/search";
-import {
-  loadWatchlist,
-  readSavedTickers,
-  writeSavedTickers,
-  type Quote,
-} from "~/lib/watchlist";
-import {
-  ArrowIcon,
-  CheckIcon,
-  ListIcon,
-  PlusIcon,
-  SearchIcon,
-  SpinnerIcon,
-} from "~/components/icons";
+import { loadWatchlist, type Quote } from "~/lib/watchlist";
+import { ArrowIcon, CheckIcon, SpinnerIcon } from "~/components/icons";
+import { TickerSearch } from "~/components/ticker-search";
 import { ThemeToggle } from "~/components/theme-toggle";
 
 function WaveBackdrop() {
@@ -39,18 +27,10 @@ function WaveBackdrop() {
 }
 
 export function FinanceHome() {
-  const [query, setQuery] = useState("");
-  const [saved, setSaved] = useState<string[]>(readSavedTickers);
+  const [saved, toggleSaved] = useSavedTickers();
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [loading, setLoading] = useState(saved.length > 0);
   const [failed, setFailed] = useState(false);
-  const [lists, setLists] = useState<string[]>([]);
-  const [namingList, setNamingList] = useState(false);
-  const [listName, setListName] = useState("");
-
-  const [searchOpen, setSearchOpen] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const { results, status } = useTickerSearch(query);
 
   // load quotes on app load and again whenever the watchlist changes. Nothing
   // saved means nothing to load, so skip the request and the spinner.
@@ -77,41 +57,6 @@ export function FinanceHome() {
     return () => controller.abort();
   }, [saved]);
 
-  // keep localStorage in sync with every add/remove
-  useEffect(() => {
-    writeSavedTickers(saved);
-  }, [saved]);
-
-  // close the dropdown when clicking anywhere outside the search box
-  useEffect(() => {
-    function onPointerDown(event: MouseEvent) {
-      if (!searchRef.current?.contains(event.target as Node)) {
-        setSearchOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
-  }, []);
-
-  function toggleSaved(symbol: string) {
-    setSaved((current) =>
-      current.includes(symbol)
-        ? current.filter((item) => item !== symbol)
-        : [...current, symbol],
-    );
-  }
-
-  function addList() {
-    const name = listName.trim();
-    if (!name) {
-      setNamingList(false);
-      return;
-    }
-    setLists((current) => [...current, name]);
-    setListName("");
-    setNamingList(false);
-  }
-
   return (
     <div className="min-h-screen bg-canvas">
       <section className="relative z-10 bg-hero">
@@ -119,37 +64,7 @@ export function FinanceHome() {
           <WaveBackdrop />
         </div>
         <div className="relative mx-auto max-w-2xl px-4 py-10 sm:py-14">
-          <div ref={searchRef} className="relative">
-            <label className="relative block">
-              <span className="sr-only">Search for stocks, ETFs and more</span>
-              <SearchIcon className="pointer-events-none absolute top-1/2 left-5 h-5 w-5 -translate-y-1/2 text-faint" />
-              <input
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setSearchOpen(true);
-                }}
-                onFocus={() => setSearchOpen(true)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") setSearchOpen(false);
-                }}
-                placeholder="Search for stocks, ETFs & more"
-                autoComplete="off"
-                aria-expanded={searchOpen && query.trim() !== ""}
-                className="h-14 w-full rounded-full border border-line-strong bg-search pr-5 pl-12 text-base text-ink shadow-[var(--shadow)] outline-none placeholder:text-faint focus:border-link"
-              />
-            </label>
-
-            {searchOpen && query.trim() !== "" && (
-              <SearchDropdown
-                query={query.trim()}
-                status={status}
-                results={results}
-                saved={saved}
-                onToggle={toggleSaved}
-              />
-            )}
-          </div>
+          <TickerSearch saved={saved} onToggle={toggleSaved} />
         </div>
       </section>
 
@@ -188,60 +103,6 @@ export function FinanceHome() {
               Couldn’t load prices. Try refreshing.
             </p>
           )}
-
-          <div className="mt-8">
-            <p className="text-[11px] font-medium tracking-[0.14em] text-muted">
-              YOUR LISTS
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-card px-4 py-2 text-sm text-ink hover:bg-hover"
-              >
-                <ListIcon className="h-4 w-4 text-muted" />
-                Watchlist
-                <span className="tabular-nums text-muted">{saved.length}</span>
-              </button>
-              {lists.map((name) => (
-                <span
-                  key={name}
-                  className="inline-flex items-center rounded-full border border-line-strong bg-card px-4 py-2 text-sm text-ink"
-                >
-                  {name}
-                </span>
-              ))}
-              {namingList ? (
-                <form
-                  className="flex items-center gap-2"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    addList();
-                  }}
-                >
-                  <input
-                    autoFocus
-                    value={listName}
-                    onChange={(event) => setListName(event.target.value)}
-                    placeholder="List name"
-                    aria-label="List name"
-                    className="h-9 w-36 rounded-full border border-line-strong bg-card px-3 text-sm text-ink outline-none focus:border-link"
-                  />
-                  <button type="submit" className="text-sm font-medium text-link">
-                    Add
-                  </button>
-                </form>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setNamingList(true)}
-                  className="inline-flex items-center gap-1 px-1 text-sm font-medium text-link"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  New list
-                </button>
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="mt-6 flex justify-end">
@@ -249,82 +110,6 @@ export function FinanceHome() {
         </div>
       </main>
     </div>
-  );
-}
-
-function SearchDropdown({
-  query,
-  status,
-  results,
-  saved,
-  onToggle,
-}: {
-  query: string;
-  status: "idle" | "loading" | "success" | "error";
-  results: SearchResult[];
-  saved: string[];
-  onToggle: (symbol: string) => void;
-}) {
-  const loading = status === "loading";
-
-  return (
-    <div className="absolute top-full right-0 left-0 z-20 mt-2 max-h-96 overflow-y-auto rounded-2xl border border-line-strong bg-card shadow-[var(--shadow)]">
-      {status === "error" ? (
-        <p className="px-5 py-6 text-sm text-down">
-          Something went wrong. Try again.
-        </p>
-      ) : results.length === 0 ? (
-        <p className="px-5 py-6 text-sm text-muted">
-          {loading ? "Searching…" : `No matches for “${query}”.`}
-        </p>
-      ) : (
-        <ul className={loading ? "opacity-60 transition-opacity" : "transition-opacity"}>
-          {results.map((result) => (
-            <SearchResultRow
-              key={result.symbol}
-              result={result}
-              saved={saved.includes(result.symbol)}
-              onToggle={() => onToggle(result.symbol)}
-            />
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function SearchResultRow({
-  result,
-  saved,
-  onToggle,
-}: {
-  result: SearchResult;
-  saved: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <li className="flex items-center gap-3 border-b border-line px-5 py-3 last:border-b-0 hover:bg-hover">
-      <span className="inline-flex h-7 w-14 shrink-0 items-center justify-center rounded-md bg-link-bg text-[11px] font-bold tracking-wide text-link">
-        {result.symbol}
-      </span>
-      <p className="min-w-0 flex-1 truncate text-[15px] text-ink">{result.name}</p>
-      <p className="hidden shrink-0 text-sm text-muted sm:block">{result.exchange}</p>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-pressed={saved}
-        aria-label={
-          saved ? `Remove ${result.symbol} from watchlist` : `Add ${result.symbol} to watchlist`
-        }
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
-          saved
-            ? "border-link bg-link-bg text-link"
-            : "border-line-strong text-muted hover:bg-hover"
-        }`}
-      >
-        {saved ? <CheckIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />}
-      </button>
-    </li>
   );
 }
 
