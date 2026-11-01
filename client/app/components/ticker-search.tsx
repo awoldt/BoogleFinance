@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useId, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { useTickerSearch } from "~/hooks/use-ticker-search";
 import type { SearchResult } from "~/lib/search";
 import { CheckIcon, PlusIcon, SearchIcon } from "~/components/icons";
@@ -15,8 +15,50 @@ export function TickerSearch({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  // index of the keyboard-highlighted result, -1 when nothing is highlighted
+  const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
+  const navigate = useNavigate();
   const { results, status } = useTickerSearch(query);
+
+  const showDropdown = open && query.trim() !== "";
+  const navigable = showDropdown && status !== "error" && results.length > 0;
+  const optionId = (index: number) => `${listId}-option-${index}`;
+
+  // a new set of results starts without a highlight
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [results]);
+
+  // keep the highlighted row visible inside the scrollable dropdown
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    document.getElementById(optionId(activeIndex))?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      setActiveIndex(-1);
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (query.trim() === "") return;
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      if (!navigable) return;
+      const last = results.length - 1;
+      setActiveIndex((current) => {
+        if (event.key === "ArrowDown") return current >= last ? 0 : current + 1;
+        return current <= 0 ? last : current - 1;
+      });
+    } else if (event.key === "Enter" && navigable && activeIndex >= 0) {
+      event.preventDefault();
+      navigate(`/${encodeURIComponent(results[activeIndex].symbol)}`);
+    }
+  }
 
   // close the dropdown when clicking anywhere outside the search box
   useEffect(() => {
@@ -45,12 +87,14 @@ export function TickerSearch({
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") setOpen(false);
-          }}
+          onKeyDown={onKeyDown}
           placeholder="Search for stocks, ETFs & more"
           autoComplete="off"
-          aria-expanded={open && query.trim() !== ""}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls={listId}
+          aria-expanded={showDropdown}
+          aria-activedescendant={navigable && activeIndex >= 0 ? optionId(activeIndex) : undefined}
           className={`w-full rounded-full border border-line-strong bg-search text-ink outline-none placeholder:text-faint focus:border-link ${
             compact
               ? "h-11 pr-4 pl-11 text-[15px]"
@@ -59,8 +103,10 @@ export function TickerSearch({
         />
       </label>
 
-      {open && query.trim() !== "" && (
+      {showDropdown && (
         <SearchDropdown
+          listId={listId}
+          activeIndex={activeIndex}
           query={query.trim()}
           status={status}
           results={results}
@@ -73,12 +119,16 @@ export function TickerSearch({
 }
 
 function SearchDropdown({
+  listId,
+  activeIndex,
   query,
   status,
   results,
   saved,
   onToggle,
 }: {
+  listId: string;
+  activeIndex: number;
   query: string;
   status: "idle" | "loading" | "success" | "error";
   results: SearchResult[];
@@ -98,10 +148,16 @@ function SearchDropdown({
           {loading ? "Searching…" : `No matches for “${query}”.`}
         </p>
       ) : (
-        <ul className={loading ? "opacity-60 transition-opacity" : "transition-opacity"}>
-          {results.map((result) => (
+        <ul
+          id={listId}
+          role="listbox"
+          className={loading ? "opacity-60 transition-opacity" : "transition-opacity"}
+        >
+          {results.map((result, index) => (
             <SearchResultRow
               key={result.symbol}
+              id={`${listId}-option-${index}`}
+              active={index === activeIndex}
               result={result}
               saved={saved.includes(result.symbol)}
               onToggle={() => onToggle(result.symbol)}
@@ -114,16 +170,27 @@ function SearchDropdown({
 }
 
 function SearchResultRow({
+  id,
+  active,
   result,
   saved,
   onToggle,
 }: {
+  id: string;
+  active: boolean;
   result: SearchResult;
   saved: boolean;
   onToggle: () => void;
 }) {
   return (
-    <li className="relative flex items-center gap-3 border-b border-line px-5 py-3 last:border-b-0 hover:bg-hover">
+    <li
+      id={id}
+      role="option"
+      aria-selected={active}
+      className={`relative flex items-center gap-3 border-b border-line px-5 py-3 last:border-b-0 hover:bg-hover ${
+        active ? "bg-hover" : ""
+      }`}
+    >
       <span className="inline-flex h-7 w-14 shrink-0 items-center justify-center rounded-md bg-link-bg text-[11px] font-bold tracking-wide text-link">
         {result.symbol}
       </span>
