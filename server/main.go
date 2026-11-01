@@ -24,7 +24,7 @@ func main() {
 	// get the FMP api key
 	FMP_API_KEY := os.Getenv("FMP_API_KEY")
 	if FMP_API_KEY == "" {
-		log.Fatal("error fmp api key is blank")
+		log.Fatal("error fmp api key is missing")
 	}
 
 	r := chi.NewRouter()
