@@ -17,7 +17,7 @@ import (
 )
 
 func GetIntradayChartData(ticker, apiKey string) ([]models.TodayChart, error) {
-	log.Printf("getting todays chart data for %v", ticker)
+	log.Printf("getting intraday chart data for %v", ticker)
 
 	today := time.Now()
 

@@ -47,8 +47,13 @@ func (cache *Cache) SaveTickerToCache(ticker models.Ticker) {
 			Expires:          ticker.PriceDetails.Expires,
 		},
 		ChartDetails: models.ChartDetails{
-			HistoricalChart: models.HistoricalChart{Prices: ticker.ChartDetails.HistoricalChart.Prices,
+			HistoricalChart: models.HistoricalChart{
+				Prices:  ticker.ChartDetails.HistoricalChart.Prices,
 				Expires: ticker.ChartDetails.HistoricalChart.Expires},
+			IntradayChart: models.IntradayChart{
+				Prices:  ticker.ChartDetails.IntradayChart.Prices,
+				Expires: ticker.ChartDetails.IntradayChart.Expires,
+			},
 		},
 	}
 
@@ -62,21 +67,21 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 	cache.Mu.RUnlock() // once we read from cache, no need for this read lock anymore
 
 	if !inCache {
-		log.Printf("%v does not exist in cache", ticker)
 		return false, models.Ticker{}, nil
 	}
 
 	log.Printf("%v found in cache!", ticker)
 	now := time.Now().Unix()
 
-	// determine if we are getting price, chart, or price+chart data
+	// determine if we are getting price or price+chart data
 	// some routes can save time if only need to grab price for exmaple....
-	// no need to check/refresh chart cache for ticker
 	switch options {
 	case PriceOnly:
 		{
 			// price is expired
 			if now >= cachedTicker.PriceDetails.Expires {
+				log.Printf("%v price data has expired", ticker)
+
 				refreshedPrice, err := fmp.GetTickerQuote(ticker, apiKey)
 				if err != nil {
 					return true, models.Ticker{}, err
@@ -102,6 +107,8 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 
 			// price is expired
 			if now >= cachedTicker.PriceDetails.Expires {
+				log.Printf("%v price data has expired", ticker)
+
 				saveCache = true
 				refreshedPrice, err := fmp.GetTickerQuote(ticker, apiKey)
 				if err != nil {
@@ -119,6 +126,8 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 
 			// historical chart is expired
 			if now >= cachedTicker.ChartDetails.HistoricalChart.Expires {
+				log.Printf("%v historical chart data has expired", ticker)
+
 				saveCache = true
 				refreshedChart, err := fmp.GetHistoricalChartData(ticker, apiKey)
 				if err != nil {
@@ -132,6 +141,8 @@ func (cache *Cache) GetTickerFromCache(ticker, apiKey string, options GetCacheOp
 
 			// intraday chart is expired
 			if now >= cachedTicker.ChartDetails.IntradayChart.Expires {
+				log.Printf("%v intraday chart data has expired", ticker)
+
 				saveCache = true
 				refreshedChart, err := fmp.GetIntradayChartData(ticker, apiKey)
 				if err != nil {

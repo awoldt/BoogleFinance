@@ -10,8 +10,7 @@ import (
 )
 
 func GetHistoricalChartData(ticker, apiKey string) ([]models.ChartDataResult, error) {
-
-	log.Printf("getting ticker chart data for %v", ticker)
+	log.Printf("getting historical chart data for %v", ticker)
 
 	// we only want to grab up to the past year of chart data for a single ticker
 	today := time.Now()
