@@ -85,7 +85,10 @@ export function FinanceHome({
           )}
         </div>
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex items-center justify-between">
+          <Link to="/privacy" className="text-sm text-muted hover:text-link">
+            Privacy
+          </Link>
           <ThemeToggle />
         </div>
       </main>
