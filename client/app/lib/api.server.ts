@@ -16,13 +16,26 @@ const API_ORIGIN = (
 
 export class TickerNotFoundError extends Error {}
 
+// Every request to the Go server must carry this in the Authorization header.
+// Read per request (not at import) so a missing value fails the request
+// instead of the build, and it only ever exists in this server-side module.
+function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const authHeader = process.env.AUTH_HEADER;
+  if (!authHeader) throw new Error("AUTH_HEADER env variable is missing");
+
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", authHeader);
+
+  return fetch(`${API_ORIGIN}${path}`, { ...init, headers });
+}
+
 /** POST /api/search?ticker=AAPL */
 export async function searchTickers(
   query: string,
   signal?: AbortSignal,
 ): Promise<SearchResult[]> {
-  const res = await fetch(
-    `${API_ORIGIN}/api/search?ticker=${encodeURIComponent(query)}`,
+  const res = await apiFetch(
+    `/api/search?ticker=${encodeURIComponent(query)}`,
     { method: "POST", signal },
   );
   if (!res.ok) throw new Error(`search failed (${res.status})`);
@@ -40,8 +53,8 @@ export async function fetchTicker(
   symbol: string,
   signal?: AbortSignal,
 ): Promise<Quote> {
-  const res = await fetch(
-    `${API_ORIGIN}/api/ticker?ticker=${encodeURIComponent(symbol)}`,
+  const res = await apiFetch(
+    `/api/ticker?ticker=${encodeURIComponent(symbol)}`,
     { method: "POST", signal },
   );
   if (res.status === 404) throw new TickerNotFoundError(symbol);
@@ -62,7 +75,7 @@ export async function loadWatchlist(
   symbols: string[],
   signal?: AbortSignal,
 ): Promise<Quote[]> {
-  const res = await fetch(`${API_ORIGIN}/api/loadwatchlist`, {
+  const res = await apiFetch("/api/loadwatchlist", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tickers: symbols }),

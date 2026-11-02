@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 )
 
@@ -27,16 +26,26 @@ func main() {
 		log.Fatal("error fmp api key is missing")
 	}
 
+	// get auth header
+	// each request made to api needs an auth header
+	AUTH_HEADER := os.Getenv("AUTH_HEADER")
+	if AUTH_HEADER == "" {
+		log.Fatal("error auth header is missing")
+	}
+
 	r := chi.NewRouter()
 
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://watchlist-production-2251.up.railway.app"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300,
-	}))
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ah := r.Header.Get("Authorization")
+			if ah == "" || ah != AUTH_HEADER {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	})
 
 	r.Post("/api/ticker", routes.TickerRoute(FMP_API_KEY))
 	r.Post("/api/search", routes.SearchTickerRoute(FMP_API_KEY))
