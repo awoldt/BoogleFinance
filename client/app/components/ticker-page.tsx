@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import type { Direction } from "~/data/markets";
 import { useSavedTickers } from "~/hooks/use-saved-tickers";
 import { ArrowIcon, BackIcon } from "~/components/icons";
+import { Brand } from "~/components/brand";
 import { TickerSearch } from "~/components/ticker-search";
 import { PriceChart } from "~/components/price-chart";
 import { ThemeToggle } from "~/components/theme-toggle";
@@ -39,6 +40,9 @@ export function TickerPage({
   return (
     <div className="min-h-screen bg-canvas">
       <main className="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
+        <div className="mb-4">
+          <Brand compact />
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <Link
             to="/"

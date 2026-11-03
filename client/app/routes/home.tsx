@@ -2,16 +2,15 @@ import type { Route } from "./+types/home";
 import { FinanceHome } from "~/components/finance-home";
 import { loadWatchlist } from "~/lib/api.server";
 import type { Quote } from "~/lib/watchlist";
+import { seoMeta } from "~/lib/seo";
 import { readSavedTickers } from "~/lib/watchlist.server";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Finance" },
-    {
-      name: "description",
-      content: "Search stocks, follow a watchlist, and scan the market.",
-    },
-  ];
+  return seoMeta({
+    title: "BoogleFinance - Stock prices and your watchlist",
+    description:
+      "BoogleFinance lets you search stocks, follow a watchlist, and scan the market.",
+  });
 }
 
 // quotes for every saved ticker, keyed by symbol. Runs again after each

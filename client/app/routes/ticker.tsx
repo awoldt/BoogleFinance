@@ -2,14 +2,15 @@ import { data, type ShouldRevalidateFunctionArgs } from "react-router";
 import type { Route } from "./+types/ticker";
 import { TickerPage } from "~/components/ticker-page";
 import { fetchTicker, TickerNotFoundError } from "~/lib/api.server";
+import { seoMeta } from "~/lib/seo";
 import { WATCHLIST_ROUTE } from "~/lib/watchlist";
 
 export function meta({ params }: Route.MetaArgs) {
   const symbol = params.ticker.toUpperCase();
-  return [
-    { title: `${symbol} · Finance` },
-    { name: "description", content: `Price and chart for ${symbol}.` },
-  ];
+  return seoMeta({
+    title: `${symbol} · BoogleFinance`,
+    description: `${symbol} stock price and chart on BoogleFinance.`,
+  });
 }
 
 export async function loader({ params, request }: Route.LoaderArgs) {

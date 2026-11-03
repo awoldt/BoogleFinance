@@ -4,6 +4,7 @@ import { useSavedTickers } from "~/hooks/use-saved-tickers";
 import { directionClass, pillClass, usd } from "~/lib/format";
 import type { Quote } from "~/lib/watchlist";
 import { ArrowIcon, CheckIcon, SpinnerIcon } from "~/components/icons";
+import { Brand } from "~/components/brand";
 import { TickerSearch } from "~/components/ticker-search";
 import { ThemeToggle } from "~/components/theme-toggle";
 
@@ -44,6 +45,7 @@ export function FinanceHome({
           <WaveBackdrop />
         </div>
         <div className="relative mx-auto max-w-2xl px-4 py-10 sm:py-14">
+          <Brand />
           <TickerSearch saved={saved} onToggle={toggleSaved} />
         </div>
       </section>

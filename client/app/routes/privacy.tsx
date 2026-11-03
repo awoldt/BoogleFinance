@@ -1,16 +1,16 @@
 import { Link } from "react-router";
 import type { Route } from "./+types/privacy";
 import { BackIcon } from "~/components/icons";
+import { seoMeta } from "~/lib/seo";
+import { Brand } from "~/components/brand";
 import { ThemeToggle } from "~/components/theme-toggle";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Privacy · Finance" },
-    {
-      name: "description",
-      content: "What this site collects, why, and the choices you have.",
-    },
-  ];
+  return seoMeta({
+    title: "Privacy · BoogleFinance",
+    description:
+      "What BoogleFinance collects, why, and the choices you have.",
+  });
 }
 
 const sections = [
@@ -79,6 +79,9 @@ export default function Privacy() {
   return (
     <div className="min-h-screen bg-canvas">
       <main className="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
+        <div className="mb-4">
+          <Brand compact />
+        </div>
         <Link
           to="/"
           className="-ml-2 inline-flex items-center gap-1 rounded-full py-1 pr-3 pl-1 text-sm font-medium text-link hover:bg-hover"
