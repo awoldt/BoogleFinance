@@ -35,5 +35,9 @@ func GetTickerQuote(ticker, apiKey string) (models.TickerQuoteResult, error) {
 		return models.TickerQuoteResult{}, err
 	}
 
+	if len(result) == 0 {
+		return models.TickerQuoteResult{}, fmt.Errorf("ERROR: no ticker price results response from FMP API")
+	}
+
 	return result[0], nil
 }
