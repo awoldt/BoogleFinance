@@ -7,9 +7,9 @@ import { readSavedTickers } from "~/lib/watchlist.server";
 
 export function meta({}: Route.MetaArgs) {
   return seoMeta({
-    title: "BoogleFinance - Stock prices and your watchlist",
+    title: "Boogle Finance - Stock prices and your watchlist",
     description:
-      "BoogleFinance lets you search stocks, follow a watchlist, and scan the market.",
+      "Boogle Finance lets you search stocks, follow a watchlist, and scan the market.",
   });
 }
 

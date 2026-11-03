@@ -8,8 +8,8 @@ import { WATCHLIST_ROUTE } from "~/lib/watchlist";
 export function meta({ params }: Route.MetaArgs) {
   const symbol = params.ticker.toUpperCase();
   return seoMeta({
-    title: `${symbol} · BoogleFinance`,
-    description: `${symbol} stock price and chart on BoogleFinance.`,
+    title: `${symbol} · Boogle Finance`,
+    description: `${symbol} stock price and chart on Boogle Finance.`,
   });
 }
 

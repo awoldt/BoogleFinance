@@ -1,4 +1,4 @@
-export const SITE_NAME = "BoogleFinance";
+export const SITE_NAME = "Boogle Finance";
 
 // A route's meta replaces its parent's, so every route builds its tags here
 // to keep the social/SEO set complete.

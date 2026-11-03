@@ -6,6 +6,7 @@ import type { Quote } from "~/lib/watchlist";
 import { ArrowIcon, CheckIcon, SpinnerIcon } from "~/components/icons";
 import { Brand } from "~/components/brand";
 import { TickerSearch } from "~/components/ticker-search";
+import { FooterLinks } from "~/components/footer-links";
 import { ThemeToggle } from "~/components/theme-toggle";
 
 function WaveBackdrop() {
@@ -88,9 +89,7 @@ export function FinanceHome({
         </div>
 
         <div className="mt-6 flex items-center justify-between">
-          <Link to="/privacy" className="text-sm text-muted hover:text-link">
-            Privacy
-          </Link>
+          <FooterLinks />
           <ThemeToggle />
         </div>
       </main>

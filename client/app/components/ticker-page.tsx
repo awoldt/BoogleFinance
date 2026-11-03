@@ -5,6 +5,7 @@ import { ArrowIcon, BackIcon } from "~/components/icons";
 import { Brand } from "~/components/brand";
 import { TickerSearch } from "~/components/ticker-search";
 import { PriceChart } from "~/components/price-chart";
+import { FooterLinks } from "~/components/footer-links";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { directionClass, pillClass, usd } from "~/lib/format";
 import type { ChartPoint, IntradayPoint, Quote } from "~/lib/watchlist";
@@ -67,9 +68,7 @@ export function TickerPage({
         )}
 
         <div className="mt-6 flex items-center justify-between">
-          <Link to="/privacy" className="text-sm text-muted hover:text-link">
-            Privacy
-          </Link>
+          <FooterLinks />
           <ThemeToggle />
         </div>
       </main>

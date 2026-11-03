@@ -1,15 +1,16 @@
 import { Link } from "react-router";
 import type { Route } from "./+types/privacy";
 import { BackIcon } from "~/components/icons";
+import { FooterLinks } from "~/components/footer-links";
 import { seoMeta } from "~/lib/seo";
 import { Brand } from "~/components/brand";
 import { ThemeToggle } from "~/components/theme-toggle";
 
 export function meta({}: Route.MetaArgs) {
   return seoMeta({
-    title: "Privacy · BoogleFinance",
+    title: "Privacy · Boogle Finance",
     description:
-      "What BoogleFinance collects, why, and the choices you have.",
+      "What Boogle Finance collects, why, and the choices you have.",
   });
 }
 
@@ -114,7 +115,8 @@ export default function Privacy() {
           ))}
         </div>
 
-        <div className="mt-10 flex justify-end border-t border-line pt-6">
+        <div className="mt-10 flex items-center justify-between border-t border-line pt-6">
+          <FooterLinks />
           <ThemeToggle />
         </div>
       </main>
