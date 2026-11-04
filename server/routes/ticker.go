@@ -4,6 +4,7 @@ import (
 	"encoding/json/v2"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 	"watchlist/cache"
@@ -21,6 +22,17 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("missing ticker in url query"))
 			return
 		}
+
+		// make sure this a valid ticker
+		invalidTicker := slices.ContainsFunc(InvalidTickerExtensions, func(ext string) bool {
+			return strings.HasSuffix(strings.ToLower(ticker), ext)
+		})
+		if invalidTicker {
+			w.WriteHeader(400)
+			w.Write([]byte("invalid ticker"))
+			return
+		}
+
 		ticker = strings.ToUpper(ticker)
 
 		// check if we have this ticker stored in the cache
