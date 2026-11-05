@@ -24,8 +24,9 @@ func TickerRoute(apiKey string) func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// make sure this a valid ticker
+		lowerTicker := strings.ToLower(ticker)
 		invalidTicker := slices.ContainsFunc(InvalidTickerExtensions, func(ext string) bool {
-			return strings.HasSuffix(strings.ToLower(ticker), ext)
+			return strings.HasSuffix(lowerTicker, ext)
 		})
 		if invalidTicker {
 			w.WriteHeader(400)
