@@ -3,7 +3,7 @@ import type { Direction } from "~/data/markets";
 import { useSavedTickers } from "~/hooks/use-saved-tickers";
 import { directionClass, pillClass, usd } from "~/lib/format";
 import type { Quote } from "~/lib/watchlist";
-import { ArrowIcon, CheckIcon, SpinnerIcon } from "~/components/icons";
+import { ArrowIcon, CheckIcon, PlusIcon, SpinnerIcon } from "~/components/icons";
 import { Brand } from "~/components/brand";
 import { TickerSearch } from "~/components/ticker-search";
 import { FooterLinks } from "~/components/footer-links";
@@ -33,11 +33,18 @@ function WaveBackdrop() {
 export function FinanceHome({
   quotes,
   failed,
+  showcaseSymbols,
 }: {
   quotes: Record<string, Quote>;
   failed: boolean;
+  // the default list for a visitor who hasn't saved a watchlist, else empty
+  showcaseSymbols: string[];
 }) {
   const { saved, pending, toggle: toggleSaved } = useSavedTickers();
+  // Adding a ticker ends the showcase right away, without waiting for the
+  // loader: the list below is then the visitor's own watchlist.
+  const showcase = saved.length === 0 && showcaseSymbols.length > 0;
+  const symbols = showcase ? showcaseSymbols : saved;
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -53,13 +60,21 @@ export function FinanceHome({
 
       <main className="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
         <div>
-          <h1 className="text-xl font-normal text-ink">Your watchlist</h1>
+          <h1 className="text-xl font-normal text-ink">
+            {showcase ? "Popular stocks" : "Your watchlist"}
+          </h1>
+          {showcase && (
+            <p className="mt-1 text-sm text-muted">
+              Your watchlist is empty, so here’s what’s popular. Search for a
+              stock above, or tap + on any of these to start your own watchlist.
+            </p>
+          )}
 
-          {saved.length === 0 ? (
+          {symbols.length === 0 ? (
             <p className="mt-4 text-sm text-muted">
               Nothing here yet. Search for a stock above and tap + to watch it.
             </p>
-          ) : pending && saved.every((symbol) => !quotes[symbol]) ? (
+          ) : pending && symbols.every((symbol) => !quotes[symbol]) ? (
             <div
               role="status"
               className="mt-4 flex items-center gap-2 text-sm text-muted"
@@ -69,13 +84,14 @@ export function FinanceHome({
             </div>
           ) : (
             <ul className="mt-2">
-              {saved.map((symbol) => (
+              {symbols.map((symbol) => (
                 <WatchlistRow
                   key={symbol}
                   symbol={symbol}
                   quote={quotes[symbol]}
                   pending={pending}
-                  onRemove={() => toggleSaved(symbol)}
+                  added={!showcase}
+                  onToggle={() => toggleSaved(symbol)}
                 />
               ))}
             </ul>
@@ -101,12 +117,15 @@ function WatchlistRow({
   symbol,
   quote,
   pending,
-  onRemove,
+  added,
+  onToggle,
 }: {
   symbol: string;
   quote: Quote | undefined;
   pending: boolean;
-  onRemove: () => void;
+  // on the watchlist (✓ removes it) or just showcased (+ adds it)
+  added: boolean;
+  onToggle: () => void;
 }) {
   const details = quote?.priceDetails;
   const direction: Direction = details && details.change < 0 ? "down" : "up";
@@ -149,11 +168,17 @@ function WatchlistRow({
       )}
       <button
         type="button"
-        onClick={onRemove}
-        aria-label={`Remove ${symbol} from watchlist`}
-        className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-link bg-link-bg text-link"
+        onClick={onToggle}
+        aria-label={
+          added ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`
+        }
+        className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+          added
+            ? "border-link bg-link-bg text-link"
+            : "border-line-strong text-muted hover:bg-hover"
+        }`}
       >
-        <CheckIcon className="h-4 w-4" />
+        {added ? <CheckIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />}
       </button>
     </li>
   );

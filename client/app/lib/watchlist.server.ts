@@ -25,13 +25,54 @@ export function cleanTickers(value: unknown): string[] {
   return [...new Set(symbols)].slice(0, MAX_TICKERS);
 }
 
-export async function readSavedTickers(request: Request): Promise<string[]> {
+// What a visitor with no watchlist cookie sees, in ABC order. Real quotes are
+// loaded for these like for any saved ticker, so the first page isn't empty.
+// Pick well-known symbols: the Go server fails the whole list if one is unknown.
+export const DEFAULT_TICKERS = [
+  "AAPL",
+  "AMZN",
+  "DIS",
+  "GOOGL",
+  "JPM",
+  "KO",
+  "META",
+  "MSFT",
+  "NFLX",
+  "NVDA",
+  "TSLA",
+  "V",
+].sort();
+
+// the cookie's symbols, or null when the visitor has never saved a watchlist
+// (no cookie, or a corrupt one)
+async function readCookie(request: Request): Promise<string[] | null> {
   try {
-    return cleanTickers(await watchlistCookie.parse(request.headers.get("Cookie")));
+    const value = await watchlistCookie.parse(request.headers.get("Cookie"));
+    if (value !== null && value !== undefined) return cleanTickers(value);
   } catch {
     // the value is corrupt
-    return [];
   }
+  return null;
+}
+
+/** The visitor's saved symbols. Empty when they have none. */
+export async function readSavedTickers(request: Request): Promise<string[]> {
+  return (await readCookie(request)) ?? [];
+}
+
+/**
+ * The symbols the home page shows quotes for. A visitor who never saved a
+ * watchlist gets the default list as a showcase (`showcase` is true); it is
+ * not saved. A cookie holding an empty list means they removed everything on
+ * purpose, so that stays empty.
+ */
+export async function readHomeTickers(
+  request: Request,
+): Promise<{ tickers: string[]; showcase: boolean }> {
+  const saved = await readCookie(request);
+  return saved === null
+    ? { tickers: DEFAULT_TICKERS, showcase: true }
+    : { tickers: saved, showcase: false };
 }
 
 /** The Set-Cookie header value that saves these symbols. */
