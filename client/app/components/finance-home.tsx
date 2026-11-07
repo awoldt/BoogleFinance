@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import type { Direction } from "~/data/markets";
 import { useSavedTickers } from "~/hooks/use-saved-tickers";
@@ -27,6 +28,30 @@ function WaveBackdrop() {
   );
 }
 
+type SortKey = "symbol" | "name" | "price" | "change" | "percent";
+type SortState = { key: SortKey; dir: "asc" | "desc" } | null;
+
+// the value each column sorts by; undefined (no quote yet) always sorts last
+function sortValue(
+  key: SortKey,
+  symbol: string,
+  quote: Quote | undefined,
+): string | number | undefined {
+  const details = quote?.priceDetails;
+  switch (key) {
+    case "symbol":
+      return symbol;
+    case "name":
+      return quote?.name;
+    case "price":
+      return details?.price;
+    case "change":
+      return details?.change;
+    case "percent":
+      return details?.changePercentage;
+  }
+}
+
 // The quotes come from the home loader, which runs on the server on page load
 // and again after every watchlist change. Until it catches up, saved tickers
 // without a quote show a spinner.
@@ -46,6 +71,37 @@ export function FinanceHome({
   const showcase = saved.length === 0 && showcaseSymbols.length > 0;
   const symbols = showcase ? showcaseSymbols : saved;
 
+  // null keeps the list in the order it was saved (or showcased)
+  const [sort, setSort] = useState<SortState>(null);
+  const sortedSymbols = useMemo(() => {
+    if (!sort) return symbols;
+    const factor = sort.dir === "asc" ? 1 : -1;
+    return [...symbols].sort((a, b) => {
+      const x = sortValue(sort.key, a, quotes[a]);
+      const y = sortValue(sort.key, b, quotes[b]);
+      if (x === undefined || y === undefined) {
+        return x === y ? 0 : x === undefined ? 1 : -1;
+      }
+      if (typeof x === "string" && typeof y === "string") {
+        return factor * x.localeCompare(y);
+      }
+      return factor * ((x as number) - (y as number));
+    });
+  }, [symbols, quotes, sort]);
+
+  // first click sorts in the column's natural direction (A-Z, biggest first),
+  // the second reverses it, the third goes back to the saved order
+  function sortBy(key: SortKey) {
+    setSort((current) => {
+      const natural = key === "symbol" || key === "name" ? "asc" : "desc";
+      if (current?.key !== key) return { key, dir: natural };
+      if (current.dir === natural) {
+        return { key, dir: natural === "asc" ? "desc" : "asc" };
+      }
+      return null;
+    });
+  }
+
   return (
     <div className="min-h-screen bg-canvas">
       <section className="relative z-10 bg-hero">
@@ -58,7 +114,7 @@ export function FinanceHome({
         </div>
       </section>
 
-      <main className="w-full px-4 py-6 sm:px-10 sm:py-8 md:px-[max(4rem,12vw)] min-[1280px]:px-[22vw]">
+      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
         <div>
           <h1 className="text-xl font-normal text-ink">
             {showcase ? "Popular stocks" : "Your watchlist"}
@@ -83,18 +139,21 @@ export function FinanceHome({
               Loading your watchlist…
             </div>
           ) : (
-            <ul className="mt-2">
-              {symbols.map((symbol) => (
-                <WatchlistRow
-                  key={symbol}
-                  symbol={symbol}
-                  quote={quotes[symbol]}
-                  pending={pending}
-                  added={!showcase}
-                  onToggle={() => toggleSaved(symbol)}
-                />
-              ))}
-            </ul>
+            <>
+              <SortHeader sort={sort} onSort={sortBy} />
+              <ul>
+                {sortedSymbols.map((symbol) => (
+                  <WatchlistRow
+                    key={symbol}
+                    symbol={symbol}
+                    quote={quotes[symbol]}
+                    pending={pending}
+                    added={!showcase}
+                    onToggle={() => toggleSaved(symbol)}
+                  />
+                ))}
+              </ul>
+            </>
           )}
 
           {failed && !pending && (
@@ -109,6 +168,60 @@ export function FinanceHome({
           <ThemeToggle />
         </div>
       </main>
+    </div>
+  );
+}
+
+// Column headings, laid out with the same widths and gaps as WatchlistRow so
+// each one sits over its column. Each is a button that sorts by that column.
+function SortHeader({
+  sort,
+  onSort,
+}: {
+  sort: SortState;
+  onSort: (key: SortKey) => void;
+}) {
+  function heading(key: SortKey, label: string, align: "left" | "right") {
+    const active = sort?.key === key;
+    const arrow = active && (
+      <ArrowIcon direction={sort.dir === "asc" ? "up" : "down"} />
+    );
+    return (
+      <button
+        type="button"
+        onClick={() => onSort(key)}
+        aria-label={`Sort by ${label}`}
+        aria-pressed={active}
+        className={`inline-flex items-center gap-1 rounded py-1 text-xs font-medium whitespace-nowrap hover:text-ink ${
+          align === "right" ? "w-full justify-end" : "justify-start"
+        } ${active ? "text-ink" : "text-muted"}`}
+      >
+        {/* the arrow sits on the inside edge so right-aligned labels stay flush */}
+        {align === "right" && arrow}
+        {label}
+        {align === "left" && arrow}
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 flex items-center gap-3 border-b border-line pb-1">
+      <div className="w-14 shrink-0">{heading("symbol", "Symbol", "left")}</div>
+      <div className="min-w-0 flex-1">{heading("name", "Name", "left")}</div>
+      {/* same stacking as the rows: price over % on phones, columns from sm up */}
+      <div className="flex w-[5.5rem] shrink-0 flex-col items-end sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+        <div className="w-full sm:w-[5.5rem]">
+          {heading("price", "Price", "right")}
+        </div>
+        <div className="hidden w-[4.75rem] shrink-0 sm:block">
+          {heading("change", "Change", "right")}
+        </div>
+        <div className="w-full sm:w-[5.5rem] sm:shrink-0">
+          {heading("percent", "% Change", "right")}
+        </div>
+      </div>
+      {/* room for the add/remove button column */}
+      <span className="w-8 shrink-0" aria-hidden="true" />
     </div>
   );
 }
@@ -164,7 +277,7 @@ function WatchlistRow({
           </span>
         </div>
       ) : (
-        <span className="flex w-[5.5rem] shrink-0 justify-end text-muted sm:w-[15.75rem]">
+        <span className="flex w-[5.5rem] shrink-0 justify-end text-muted sm:w-[17.25rem]">
           {pending ? <SpinnerIcon className="h-4 w-4" /> : "—"}
         </span>
       )}

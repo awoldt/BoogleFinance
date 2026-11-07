@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import type { Direction } from "~/data/markets";
 import { useSavedTickers } from "~/hooks/use-saved-tickers";
-import { ArrowIcon, BackIcon } from "~/components/icons";
+import { ArrowIcon, BackIcon, CheckIcon, PlusIcon } from "~/components/icons";
 import { Brand } from "~/components/brand";
 import { TickerSearch } from "~/components/ticker-search";
 import { PriceChart } from "~/components/price-chart";
@@ -40,7 +40,7 @@ export function TickerPage({
 
   return (
     <div className="min-h-screen bg-canvas">
-      <main className="w-full px-4 py-6 sm:px-10 sm:py-8 md:px-[max(4rem,12vw)] min-[1280px]:px-[22vw]">
+      <main className="w-full px-4 py-6 sm:px-10 sm:py-8 md:px-[max(4rem,12vw)] xl:px-[22vw]">
         <div className="mb-4">
           <Brand compact />
         </div>
@@ -58,7 +58,11 @@ export function TickerPage({
         </div>
 
         {quote ? (
-          <QuoteView quote={quote} />
+          <QuoteView
+            quote={quote}
+            saved={saved.includes(quote.symbol)}
+            onToggle={() => toggleSaved(quote.symbol)}
+          />
         ) : (
           <p className="mt-6 text-sm text-down">
             {problem === "notfound"
@@ -76,7 +80,16 @@ export function TickerPage({
   );
 }
 
-function QuoteView({ quote }: { quote: Quote }) {
+function QuoteView({
+  quote,
+  saved,
+  onToggle,
+}: {
+  quote: Quote;
+  // whether the ticker is on the watchlist (the button then removes it)
+  saved: boolean;
+  onToggle: () => void;
+}) {
   const { price, change, changePercentage, timestamp } = quote.priceDetails;
   const direction: Direction = change < 0 ? "down" : "up";
   const prices = quote.chartDetails?.historicalChart?.prices ?? EMPTY_PRICES;
@@ -91,6 +104,30 @@ function QuoteView({ quote }: { quote: Quote }) {
         <h1 className="min-w-0 truncate text-2xl font-normal text-ink">
           {quote.name}
         </h1>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-pressed={saved}
+          aria-label={
+            saved
+              ? `Remove ${quote.symbol} from watchlist`
+              : `Add ${quote.symbol} to watchlist`
+          }
+          className={`ml-auto inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-sm font-medium sm:px-4 ${
+            saved
+              ? "border-link bg-link-bg text-link"
+              : "border-line-strong text-muted hover:bg-hover hover:text-ink"
+          }`}
+        >
+          {saved ? (
+            <CheckIcon className="h-4 w-4" />
+          ) : (
+            <PlusIcon className="h-4 w-4" />
+          )}
+          <span className="hidden sm:inline">
+            {saved ? "In watchlist" : "Add to watchlist"}
+          </span>
+        </button>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
