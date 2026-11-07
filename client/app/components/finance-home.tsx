@@ -58,7 +58,7 @@ export function FinanceHome({
         </div>
       </section>
 
-      <main className="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
+      <main className="w-full px-4 py-6 sm:px-10 sm:py-8 md:px-[max(4rem,12vw)] min-[1280px]:px-[22vw]">
         <div>
           <h1 className="text-xl font-normal text-ink">
             {showcase ? "Popular stocks" : "Your watchlist"}
@@ -144,8 +144,10 @@ function WatchlistRow({
         {quote?.name ?? ""}
       </Link>
       {details ? (
-        <>
-          <p className="w-[5.5rem] shrink-0 text-right text-[15px] font-medium tabular-nums text-ink">
+        // phones stack the price over the change pill so the name keeps room;
+        // from sm up they sit in one line as separate columns
+        <div className="flex w-[5.5rem] shrink-0 flex-col items-end gap-1 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+          <p className="text-right text-[15px] font-medium tabular-nums text-ink sm:w-[5.5rem]">
             {usd.format(details.price)}
           </p>
           <p
@@ -155,12 +157,12 @@ function WatchlistRow({
             {usd.format(Math.abs(details.change))}
           </p>
           <span
-            className={`inline-flex w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded-full px-2 py-1 text-sm font-medium tabular-nums ${pillClass(direction)}`}
+            className={`inline-flex w-[4.75rem] shrink-0 items-center justify-center gap-0.5 rounded-full px-2 py-0.5 text-sm font-medium tabular-nums sm:w-[5.5rem] sm:py-1 ${pillClass(direction)}`}
           >
             <ArrowIcon direction={direction} />
             {Math.abs(details.changePercentage).toFixed(2)}%
           </span>
-        </>
+        </div>
       ) : (
         <span className="flex w-[5.5rem] shrink-0 justify-end text-muted sm:w-[15.75rem]">
           {pending ? <SpinnerIcon className="h-4 w-4" /> : "—"}

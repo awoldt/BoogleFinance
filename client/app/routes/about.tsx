@@ -17,7 +17,7 @@ export function meta({}: Route.MetaArgs) {
 export default function About() {
   return (
     <div className="min-h-screen bg-canvas">
-      <main className="w-full px-[max(4rem,12vw)] py-8 min-[1280px]:px-[22vw]">
+      <main className="w-full px-4 py-6 sm:px-10 sm:py-8 md:px-[max(4rem,12vw)] min-[1280px]:px-[22vw]">
         <div className="mb-4">
           <Brand compact />
         </div>
